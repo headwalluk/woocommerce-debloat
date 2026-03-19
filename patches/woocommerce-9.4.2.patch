@@ -1,0 +1,97 @@
+diff -ur woocommerce/includes/admin/helper/class-wc-helper.php woocommerce-patched/includes/admin/helper/class-wc-helper.php
+--- woocommerce/includes/admin/helper/class-wc-helper.php	2024-08-27 19:04:44.000000000 +0100
++++ woocommerce-patched/includes/admin/helper/class-wc-helper.php	2024-11-12 21:04:58.934466975 +0000
+@@ -1580,6 +1580,8 @@
+ 	 * @return array
+ 	 */
+ 	public static function get_product_usage_notice_rules() {
++        return []; // Stop calling home when we don't need to.
++        
+ 		$cache_key = '_woocommerce_helper_product_usage_notice_rules';
+ 		$data      = get_transient( $cache_key );
+ 		if ( false !== $data ) {
+diff -ur woocommerce/includes/class-woocommerce.php woocommerce-patched/includes/class-woocommerce.php
+--- woocommerce/includes/class-woocommerce.php	2024-11-12 16:55:52.000000000 +0000
++++ woocommerce-patched/includes/class-woocommerce.php	2024-11-12 21:04:58.942467067 +0000
+@@ -297,7 +297,18 @@
+ 		add_action( 'init', array( $this, 'add_image_sizes' ) );
+ 		add_action( 'init', array( $this, 'load_rest_api' ) );
+ 		if ( $this->is_request( 'admin' ) || ( $this->is_rest_api_request() && ! $this->is_store_api_request() ) || ( defined( 'WP_CLI' ) && WP_CLI ) ) {
+-			add_action( 'init', array( 'WC_Site_Tracking', 'init' ) );
++            // Even with site usage tracking disabled, Woo still puts loads of tracking stuff into the browser.
++            // Let's get rid of that here.
++			// add_action( 'init', array( 'WC_Site_Tracking', 'init' ) );
++            // We need a stub so that some secondary scripts don't generate errors.
++            add_action( 'admin_footer', function(){
++                echo '<script type="text/javascript">';
++                echo 'window.wcTracks = window.wcTracks || {};';
++                echo 'window.wcTracks.isEnabled = false;';
++                echo 'window.wcTracks.validateEvent = () => {};';
++                echo 'window.wcTracks.recordEvent = () => {};';
++                echo '</script>';
++            });
+ 		}
+ 		add_action( 'switch_blog', array( $this, 'wpdb_table_fix' ), 0 );
+ 		add_action( 'activated_plugin', array( $this, 'activated_plugin' ) );
+@@ -329,9 +340,9 @@
+ 		$container->get( WebhookUtil::class );
+ 		$container->get( Marketplace::class );
+ 		$container->get( TimeUtil::class );
+-		$container->get( ComingSoonAdminBarBadge::class );
+-		$container->get( ComingSoonCacheInvalidator::class );
+-		$container->get( ComingSoonRequestHandler::class );
++		// $container->get( ComingSoonAdminBarBadge::class );
++		// $container->get( ComingSoonCacheInvalidator::class );
++		// $container->get( ComingSoonRequestHandler::class );
+ 
+ 		/**
+ 		 * These classes have a register method for attaching hooks.
+@@ -653,8 +664,8 @@
+ 		include_once WC_ABSPATH . 'includes/class-wc-logger.php';
+ 		include_once WC_ABSPATH . 'includes/queue/class-wc-action-queue.php';
+ 		include_once WC_ABSPATH . 'includes/queue/class-wc-queue.php';
+-		include_once WC_ABSPATH . 'includes/admin/marketplace-suggestions/class-wc-marketplace-updater.php';
+-		include_once WC_ABSPATH . 'includes/admin/class-wc-admin-marketplace-promotions.php';
++		// include_once WC_ABSPATH . 'includes/admin/marketplace-suggestions/class-wc-marketplace-updater.php';
++		// include_once WC_ABSPATH . 'includes/admin/class-wc-admin-marketplace-promotions.php';
+ 		include_once WC_ABSPATH . 'includes/blocks/class-wc-blocks-utils.php';
+ 
+ 		/**
+@@ -826,6 +837,19 @@
+ 		 */
+ 		do_action( 'before_woocommerce_init' ); // phpcs:ignore WooCommerce.Commenting.CommentHooks.MissingSinceComment
+ 
++        // Force some options to no and autoload them.
++        $options_to_no = [
++            'woocommerce_allow_tracking',
++            'marketplace_suggestions',
++            'woocommerce_show_marketplace_suggestions',
++            'woocommerce_feature_order_attribution_enabled'
++        ];
++        foreach( $options_to_no as $option_name ) {
++            if( filter_var( get_option( $option_name, false ),  FILTER_VALIDATE_BOOLEAN ) !== false ) {
++                update_option( $option_name, 'no', true );
++            }
++        }
++
+ 		// Set up localisation.
+ 		$this->load_plugin_textdomain();
+ 
+Only in woocommerce-patched/includes: class-woocommerce.php.orig
+diff -ur woocommerce/woocommerce.php woocommerce-patched/woocommerce.php
+--- woocommerce/woocommerce.php	2024-11-12 16:55:52.000000000 +0000
++++ woocommerce-patched/woocommerce.php	2024-11-12 21:04:58.978467482 +0000
+@@ -65,3 +65,13 @@
+ if ( class_exists( \Automattic\Jetpack\Connection\Rest_Authentication::class ) ) {
+ 	\Automattic\Jetpack\Connection\Rest_Authentication::init();
+ }
++
++// START : wpatcher
++add_filter( 'plugin_row_meta', function($links, $file){
++    if( $file == 'woocommerce/woocommerce.php'){
++        $links['wpatcher'] = '<span style="background-color: purple; color: white; padding:0.2em 0.5em; font-weight: 700; border-radius: 0.3em">PATCHED : 2024-11-19</span>';
++    }
++    
++    return $links;
++}, 10, 2 );
++// END : wpatcher

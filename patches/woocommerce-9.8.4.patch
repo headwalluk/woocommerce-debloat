@@ -1,0 +1,118 @@
+diff -ur woocommerce-9.8.3/includes/admin/helper/class-wc-helper.php woocommerce-9.8.3-patched/includes/admin/helper/class-wc-helper.php
+--- woocommerce-9.8.3/includes/admin/helper/class-wc-helper.php	2025-04-30 18:36:35.032550062 +0100
++++ woocommerce-9.8.3-patched/includes/admin/helper/class-wc-helper.php	2025-05-06 11:47:10.266486780 +0100
+@@ -1583,6 +1583,8 @@
+ 	 * @return array
+ 	 */
+ 	public static function get_product_usage_notice_rules() {
++        return []; // Stop calling home when we don't need to.
++        
+ 		$cache_key = '_woocommerce_helper_product_usage_notice_rules';
+ 		$data      = get_transient( $cache_key );
+ 		if ( false !== $data ) {
+diff -ur woocommerce-9.8.3/includes/class-woocommerce.php woocommerce-9.8.3-patched/includes/class-woocommerce.php
+--- woocommerce-9.8.3/includes/class-woocommerce.php	2025-04-30 18:36:35.040550208 +0100
++++ woocommerce-9.8.3-patched/includes/class-woocommerce.php	2025-05-06 11:47:10.258486686 +0100
+@@ -294,7 +294,18 @@
+ 		add_action( 'init', array( $this, 'add_image_sizes' ) );
+ 		add_action( 'init', array( $this, 'load_rest_api' ) );
+ 		if ( $this->is_request( 'admin' ) || ( $this->is_rest_api_request() && ! $this->is_store_api_request() ) || ( defined( 'WP_CLI' ) && WP_CLI ) ) {
+-			add_action( 'init', array( 'WC_Site_Tracking', 'init' ) );
++            // Even with site usage tracking disabled, Woo still puts loads of tracking stuff into the browser.
++            // Let's get rid of that here.
++			// add_action( 'init', array( 'WC_Site_Tracking', 'init' ) );
++            // We need a stub so that some secondary scripts don't generate errors.
++            add_action( 'admin_footer', function(){
++                echo '<script type="text/javascript">';
++                echo 'window.wcTracks = window.wcTracks || {};';
++                echo 'window.wcTracks.isEnabled = false;';
++                echo 'window.wcTracks.validateEvent = () => {};';
++                echo 'window.wcTracks.recordEvent = () => {};';
++                echo '</script>';
++            });
+ 		}
+ 		add_action( 'switch_blog', array( $this, 'wpdb_table_fix' ), 0 );
+ 		add_action( 'activated_plugin', array( $this, 'activated_plugin' ) );
+@@ -661,8 +672,8 @@
+ 		include_once WC_ABSPATH . 'includes/class-wc-logger.php';
+ 		include_once WC_ABSPATH . 'includes/queue/class-wc-action-queue.php';
+ 		include_once WC_ABSPATH . 'includes/queue/class-wc-queue.php';
+-		include_once WC_ABSPATH . 'includes/admin/marketplace-suggestions/class-wc-marketplace-updater.php';
+-		include_once WC_ABSPATH . 'includes/admin/class-wc-admin-marketplace-promotions.php';
++		// include_once WC_ABSPATH . 'includes/admin/marketplace-suggestions/class-wc-marketplace-updater.php';
++		// include_once WC_ABSPATH . 'includes/admin/class-wc-admin-marketplace-promotions.php';
+ 		include_once WC_ABSPATH . 'includes/blocks/class-wc-blocks-utils.php';
+ 
+ 		/**
+@@ -840,6 +851,20 @@
+ 		 */
+ 		do_action( 'before_woocommerce_init' ); // phpcs:ignore WooCommerce.Commenting.CommentHooks.MissingSinceComment
+ 
++        // Force some options to no and autoload them.
++        // 'woocommerce_feature_order_attribution_enabled',
++        $options_to_no = [
++            'woocommerce_allow_tracking',
++            'marketplace_suggestions',
++            'woocommerce_show_marketplace_suggestions',
++            'woocommerce_feature_remote_logging_enabled'
++        ];
++        foreach( $options_to_no as $option_name ) {
++            if( filter_var( get_option( $option_name, false ),  FILTER_VALIDATE_BOOLEAN ) !== false ) {
++                update_option( $option_name, 'no', true );
++            }
++        }
++
+ 		// Set up localisation.
+ 		$this->load_plugin_textdomain();
+ 
+diff -ur woocommerce-9.8.3/includes/tracks/class-wc-site-tracking.php woocommerce-9.8.3-patched/includes/tracks/class-wc-site-tracking.php
+--- woocommerce-9.8.3/includes/tracks/class-wc-site-tracking.php	2025-04-30 18:36:35.040550208 +0100
++++ woocommerce-9.8.3-patched/includes/tracks/class-wc-site-tracking.php	2025-05-06 11:47:10.262486733 +0100
+@@ -17,6 +17,9 @@
+ 	 * @return bool
+ 	 */
+ 	public static function is_tracking_enabled() {
++        // Never use remote logging
++        return false;
++        
+ 		/**
+ 		 * Don't track users if a filter has been applied to turn it off.
+ 		 * `woocommerce_apply_tracking` will be deprecated. Please use
+diff -ur woocommerce-9.8.3/src/Blocks/Utils/CartCheckoutUtils.php woocommerce-9.8.3-patched/src/Blocks/Utils/CartCheckoutUtils.php
+--- woocommerce-9.8.3/src/Blocks/Utils/CartCheckoutUtils.php	2025-04-30 18:36:35.056550502 +0100
++++ woocommerce-9.8.3-patched/src/Blocks/Utils/CartCheckoutUtils.php	2025-05-06 11:47:10.250486592 +0100
+@@ -88,9 +88,9 @@
+ 					return true;
+ 				}
+ 				// Cart is default so it will be empty.
+-				if ( 'woocommerce/classic-shortcode' === $block_id && 'shortcode' === $attribute && 'cart' === $value && ! isset( $block['attrs']['shortcode'] ) ) {
+-					return true;
+-				}
++				// if ( 'woocommerce/classic-shortcode' === $block_id && 'shortcode' === $attribute && 'cart' === $value && ! isset( $block['attrs']['shortcode'] ) ) {
++				// 	return true;
++				// }
+ 			}
+ 		}
+ 
+diff -ur woocommerce-9.8.3/woocommerce.php woocommerce-9.8.3-patched/woocommerce.php
+--- woocommerce-9.8.3/woocommerce.php	2025-04-30 18:36:35.076550870 +0100
++++ woocommerce-9.8.3-patched/woocommerce.php	2025-05-06 11:47:10.238486451 +0100
+@@ -65,3 +65,18 @@
+ if ( class_exists( \Automattic\Jetpack\Connection\Rest_Authentication::class ) ) {
+ 	\Automattic\Jetpack\Connection\Rest_Authentication::init();
+ }
++
++// START : wpatcher
++add_filter(
++	'plugin_row_meta',
++	function ( $links, $file ) {
++		if ( $file == 'woocommerce/woocommerce.php' ) {
++			$links['wpatcher'] = '<span style="background-color: purple; color: white; padding:0.2em 0.5em; font-weight: 700; border-radius: 0.3em">PATCHED : 2025-05-06</span>';
++		}
++
++		return $links;
++	},
++	10,
++	2
++);
++// END : wpatcher
