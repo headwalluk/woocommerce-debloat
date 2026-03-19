@@ -101,7 +101,7 @@ Even with usage tracking disabled in the WooCommerce settings, tracking infrastr
 
 The patches in this repository are the result of working through the WooCommerce source to identify and remove that behaviour, while preserving everything that legitimate ecommerce operations depend on.
 
-A detailed write-up of the investigation is available at [headwall.co.uk](https://headwall.co.uk) *(coming soon)*.
+A detailed write-up of the investigation is available at [headwall-hosting.com](https://headwall-hosting.com/a-web-guys-blog/) *(coming soon)*.
 
 ---
 
