@@ -1,4 +1,4 @@
-# woocommerce-debloat
+# WooCommerce Debloat
 
 **Performance and privacy patches for WooCommerce.**
 
@@ -6,11 +6,13 @@ WooCommerce ships with a substantial amount of code that serves Automattic's int
 
 This project provides surgical patches to remove that behaviour — without breaking anything you actually need. Plugin update checking, subscription management, and all core ecommerce functionality remain fully intact.
 
+**Important**: This is NOT an attempt to nullify commercial plugins or extensions. I created this patch to improve my clients' WooCommerce admin area performance and to stop unnecessary data being sent to third parties without meaningful consent. If you're looking for something that lets you use commercial WooCommerce extensions without paying, you're looking in the wrong place.
+
 ---
 
 ## What the patch does
 
-Each patch targets a specific version of WooCommerce. The changes are conservative and well-commented. Here's what they cover:
+Each patch targets a specific version of WooCommerce. The changes are conservative and commented. Here's what they cover:
 
 **Tracking & telemetry**
 - Disables `WC_Site_Tracking` unconditionally, regardless of the admin setting
