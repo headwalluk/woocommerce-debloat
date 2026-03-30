@@ -1,6 +1,18 @@
-diff -ur woocommerce-10.6.1/includes/admin/helper/class-wc-helper.php woocommerce-10.6.1-patched/includes/admin/helper/class-wc-helper.php
---- woocommerce-10.6.1/includes/admin/helper/class-wc-helper.php	2026-03-13 06:47:55.489836510 +0000
-+++ woocommerce-10.6.1-patched/includes/admin/helper/class-wc-helper.php	2026-03-28 07:07:30.783644641 +0000
+diff -ruN woocommerce-10.6.1/assets/js/frontend/a8c-address-autocomplete-service.js woocommerce-10.6.1-patched/assets/js/frontend/a8c-address-autocomplete-service.js
+--- woocommerce-10.6.1/assets/js/frontend/a8c-address-autocomplete-service.js	2025-07-29 08:34:58.000000000 +0100
++++ woocommerce-10.6.1-patched/assets/js/frontend/a8c-address-autocomplete-service.js	2026-03-30 18:28:09.402569261 +0100
+@@ -467,6 +467,8 @@
+ }
+ 
+ function createStatsdURL( sectionName, events ) {
++	// Disable address autocomplete tracking pixel to pixel.wp.com.
++	return '';
+ 	if ( ! Array.isArray( events ) ) {
+ 		events = [ events ]; // Only a single event was passed to process.
+ 	}
+diff -ruN woocommerce-10.6.1/includes/admin/helper/class-wc-helper.php woocommerce-10.6.1-patched/includes/admin/helper/class-wc-helper.php
+--- woocommerce-10.6.1/includes/admin/helper/class-wc-helper.php	2026-02-23 12:58:34.000000000 +0000
++++ woocommerce-10.6.1-patched/includes/admin/helper/class-wc-helper.php	2026-03-30 18:20:52.360355117 +0100
 @@ -1733,6 +1733,8 @@
  	 * phpcs:ignore Squiz.Commenting.FunctionCommentThrowTag.Missing -- As we wrap the throw in a try/catch.
  	 */
@@ -10,9 +22,9 @@ diff -ur woocommerce-10.6.1/includes/admin/helper/class-wc-helper.php woocommerc
  		$cache_key = '_woocommerce_helper_product_usage_notice_rules';
  		$data      = get_transient( $cache_key );
  		if ( false !== $data ) {
-diff -ur woocommerce-10.6.1/includes/admin/marketplace-suggestions/class-wc-marketplace-suggestions.php woocommerce-10.6.1-patched/includes/admin/marketplace-suggestions/class-wc-marketplace-suggestions.php
---- woocommerce-10.6.1/includes/admin/marketplace-suggestions/class-wc-marketplace-suggestions.php	2026-03-13 06:47:55.489836510 +0000
-+++ woocommerce-10.6.1-patched/includes/admin/marketplace-suggestions/class-wc-marketplace-suggestions.php	2026-03-28 07:07:30.783644641 +0000
+diff -ruN woocommerce-10.6.1/includes/admin/marketplace-suggestions/class-wc-marketplace-suggestions.php woocommerce-10.6.1-patched/includes/admin/marketplace-suggestions/class-wc-marketplace-suggestions.php
+--- woocommerce-10.6.1/includes/admin/marketplace-suggestions/class-wc-marketplace-suggestions.php	2025-07-29 08:34:58.000000000 +0100
++++ woocommerce-10.6.1-patched/includes/admin/marketplace-suggestions/class-wc-marketplace-suggestions.php	2026-03-30 18:20:52.360355117 +0100
 @@ -163,6 +163,9 @@
  	 * @return bool
  	 */
@@ -23,9 +35,9 @@ diff -ur woocommerce-10.6.1/includes/admin/marketplace-suggestions/class-wc-mark
  		// We currently only support English suggestions.
  		$locale             = get_locale();
  		$suggestion_locales = array(
-diff -ur woocommerce-10.6.1/includes/class-woocommerce.php woocommerce-10.6.1-patched/includes/class-woocommerce.php
---- woocommerce-10.6.1/includes/class-woocommerce.php	2026-03-13 06:47:55.497836615 +0000
-+++ woocommerce-10.6.1-patched/includes/class-woocommerce.php	2026-03-28 07:07:30.775644543 +0000
+diff -ruN woocommerce-10.6.1/includes/class-woocommerce.php woocommerce-10.6.1-patched/includes/class-woocommerce.php
+--- woocommerce-10.6.1/includes/class-woocommerce.php	2026-03-12 16:10:34.000000000 +0000
++++ woocommerce-10.6.1-patched/includes/class-woocommerce.php	2026-03-30 18:20:52.360355117 +0100
 @@ -315,7 +315,7 @@
  
  		add_action( 'plugins_loaded', array( $this, 'on_plugins_loaded' ), -1 );
@@ -100,9 +112,22 @@ diff -ur woocommerce-10.6.1/includes/class-woocommerce.php woocommerce-10.6.1-pa
  		if ( true !== wc_string_to_bool( get_option( 'woocommerce_allow_tracking', 'no' ) ) ) {
  			return;
  		}
-diff -ur woocommerce-10.6.1/includes/tracks/class-wc-site-tracking.php woocommerce-10.6.1-patched/includes/tracks/class-wc-site-tracking.php
---- woocommerce-10.6.1/includes/tracks/class-wc-site-tracking.php	2026-03-13 06:47:55.497836615 +0000
-+++ woocommerce-10.6.1-patched/includes/tracks/class-wc-site-tracking.php	2026-03-28 07:07:30.779644592 +0000
+diff -ruN woocommerce-10.6.1/includes/react-admin/class-experimental-abtest.php woocommerce-10.6.1-patched/includes/react-admin/class-experimental-abtest.php
+--- woocommerce-10.6.1/includes/react-admin/class-experimental-abtest.php	2025-03-03 17:28:12.000000000 +0000
++++ woocommerce-10.6.1-patched/includes/react-admin/class-experimental-abtest.php	2026-03-30 18:27:57.678405318 +0100
+@@ -153,6 +153,9 @@
+ 	 * @return array|\WP_Error A/B test variation error on failure.
+ 	 */
+ 	public function request_assignment( $args ) {
++		// No A/B test assignments from WordPress.com. Return control variant.
++		return array( 'body' => wp_json_encode( array( 'variations' => array() ) ) );
++
+ 		// Request as authenticated wp user.
+ 		if ( $this->as_auth_wpcom_user && class_exists( Jetpack_Connection_Manager::class ) ) {
+ 			$jetpack_connection_manager = new Jetpack_Connection_Manager();
+diff -ruN woocommerce-10.6.1/includes/tracks/class-wc-site-tracking.php woocommerce-10.6.1-patched/includes/tracks/class-wc-site-tracking.php
+--- woocommerce-10.6.1/includes/tracks/class-wc-site-tracking.php	2026-02-23 12:58:34.000000000 +0000
++++ woocommerce-10.6.1-patched/includes/tracks/class-wc-site-tracking.php	2026-03-30 18:20:52.360355117 +0100
 @@ -17,6 +17,9 @@
  	 * @return bool
  	 */
@@ -113,9 +138,9 @@ diff -ur woocommerce-10.6.1/includes/tracks/class-wc-site-tracking.php woocommer
  		/**
  		 * Don't track users if a filter has been applied to turn it off.
  		 * `woocommerce_apply_tracking` will be deprecated. Please use
-diff -ur woocommerce-10.6.1/includes/tracks/class-wc-tracks-client.php woocommerce-10.6.1-patched/includes/tracks/class-wc-tracks-client.php
---- woocommerce-10.6.1/includes/tracks/class-wc-tracks-client.php	2026-03-13 06:47:55.497836615 +0000
-+++ woocommerce-10.6.1-patched/includes/tracks/class-wc-tracks-client.php	2026-03-28 07:07:30.779644592 +0000
+diff -ruN woocommerce-10.6.1/includes/tracks/class-wc-tracks-client.php woocommerce-10.6.1-patched/includes/tracks/class-wc-tracks-client.php
+--- woocommerce-10.6.1/includes/tracks/class-wc-tracks-client.php	2026-01-19 09:46:18.000000000 +0000
++++ woocommerce-10.6.1-patched/includes/tracks/class-wc-tracks-client.php	2026-03-30 18:20:52.360355117 +0100
 @@ -50,6 +50,9 @@
  	 * @return void
  	 */
@@ -126,9 +151,9 @@ diff -ur woocommerce-10.6.1/includes/tracks/class-wc-tracks-client.php woocommer
  		// Use wp hook for setting the identity cookie to avoid headers already sent warnings.
  		add_action( 'admin_init', array( __CLASS__, 'maybe_set_identity_cookie' ) );
  	}
-diff -ur woocommerce-10.6.1/includes/wccom-site/class-wc-wccom-site.php woocommerce-10.6.1-patched/includes/wccom-site/class-wc-wccom-site.php
---- woocommerce-10.6.1/includes/wccom-site/class-wc-wccom-site.php	2026-03-13 06:47:55.497836615 +0000
-+++ woocommerce-10.6.1-patched/includes/wccom-site/class-wc-wccom-site.php	2026-03-28 07:07:30.783644641 +0000
+diff -ruN woocommerce-10.6.1/includes/wccom-site/class-wc-wccom-site.php woocommerce-10.6.1-patched/includes/wccom-site/class-wc-wccom-site.php
+--- woocommerce-10.6.1/includes/wccom-site/class-wc-wccom-site.php	2024-12-18 17:19:16.000000000 +0000
++++ woocommerce-10.6.1-patched/includes/wccom-site/class-wc-wccom-site.php	2026-03-30 18:20:52.360355117 +0100
 @@ -26,6 +26,9 @@
  	 * @since 3.7.0
  	 */
@@ -139,9 +164,33 @@ diff -ur woocommerce-10.6.1/includes/wccom-site/class-wc-wccom-site.php woocomme
  		self::includes();
  
  		add_action( 'woocommerce_wccom_install_products', array( 'WC_WCCOM_Site_Installer', 'install' ) );
-diff -ur woocommerce-10.6.1/src/Admin/Features/PaymentGatewaySuggestions/PaymentGatewaySuggestionsDataSourcePoller.php woocommerce-10.6.1-patched/src/Admin/Features/PaymentGatewaySuggestions/PaymentGatewaySuggestionsDataSourcePoller.php
---- woocommerce-10.6.1/src/Admin/Features/PaymentGatewaySuggestions/PaymentGatewaySuggestionsDataSourcePoller.php	2026-03-13 06:47:55.513836826 +0000
-+++ woocommerce-10.6.1-patched/src/Admin/Features/PaymentGatewaySuggestions/PaymentGatewaySuggestionsDataSourcePoller.php	2026-03-28 07:07:30.707643705 +0000
+diff -ruN woocommerce-10.6.1/src/Admin/Features/MarketingRecommendations/MarketingRecommendationsDataSourcePoller.php woocommerce-10.6.1-patched/src/Admin/Features/MarketingRecommendations/MarketingRecommendationsDataSourcePoller.php
+--- woocommerce-10.6.1/src/Admin/Features/MarketingRecommendations/MarketingRecommendationsDataSourcePoller.php	2024-11-13 20:17:00.000000000 +0000
++++ woocommerce-10.6.1-patched/src/Admin/Features/MarketingRecommendations/MarketingRecommendationsDataSourcePoller.php	2026-03-30 18:28:01.718461824 +0100
+@@ -51,6 +51,8 @@
+ 	 * @return array
+ 	 */
+ 	public static function get_data_sources() {
++		return []; // No phoning home for marketing recommendations.
++
+ 		return array(
+ 			WC_Helper::get_woocommerce_com_base_url() . 'wp-json/wccom/marketing-tab/1.3/recommendations.json',
+ 		);
+diff -ruN woocommerce-10.6.1/src/Admin/Features/MarketingRecommendations/MiscRecommendationsDataSourcePoller.php woocommerce-10.6.1-patched/src/Admin/Features/MarketingRecommendations/MiscRecommendationsDataSourcePoller.php
+--- woocommerce-10.6.1/src/Admin/Features/MarketingRecommendations/MiscRecommendationsDataSourcePoller.php	2024-11-13 20:17:00.000000000 +0000
++++ woocommerce-10.6.1-patched/src/Admin/Features/MarketingRecommendations/MiscRecommendationsDataSourcePoller.php	2026-03-30 18:28:03.502486772 +0100
+@@ -59,6 +59,8 @@
+ 	 * @return array
+ 	 */
+ 	public static function get_data_sources() {
++		return []; // No phoning home for misc recommendations.
++
+ 		return array(
+ 			WC_Helper::get_woocommerce_com_base_url() . 'wp-json/wccom/marketing-tab/misc/recommendations.json',
+ 		);
+diff -ruN woocommerce-10.6.1/src/Admin/Features/PaymentGatewaySuggestions/PaymentGatewaySuggestionsDataSourcePoller.php woocommerce-10.6.1-patched/src/Admin/Features/PaymentGatewaySuggestions/PaymentGatewaySuggestionsDataSourcePoller.php
+--- woocommerce-10.6.1/src/Admin/Features/PaymentGatewaySuggestions/PaymentGatewaySuggestionsDataSourcePoller.php	2024-11-13 20:17:00.000000000 +0000
++++ woocommerce-10.6.1-patched/src/Admin/Features/PaymentGatewaySuggestions/PaymentGatewaySuggestionsDataSourcePoller.php	2026-03-30 18:20:52.360355117 +0100
 @@ -45,6 +45,8 @@
  	 * @return array
  	 */
@@ -151,9 +200,33 @@ diff -ur woocommerce-10.6.1/src/Admin/Features/PaymentGatewaySuggestions/Payment
  		$data_sources = array(
  			WC_Helper::get_woocommerce_com_base_url() . 'wp-json/wccom/payment-gateway-suggestions/2.0/suggestions.json',
  		);
-diff -ur woocommerce-10.6.1/src/Blocks/DependencyDetection.php woocommerce-10.6.1-patched/src/Blocks/DependencyDetection.php
---- woocommerce-10.6.1/src/Blocks/DependencyDetection.php	2026-03-13 06:47:55.521836931 +0000
-+++ woocommerce-10.6.1-patched/src/Blocks/DependencyDetection.php	2026-03-28 07:07:30.699643606 +0000
+diff -ruN woocommerce-10.6.1/src/Admin/Features/ShippingPartnerSuggestions/ShippingPartnerSuggestionsDataSourcePoller.php woocommerce-10.6.1-patched/src/Admin/Features/ShippingPartnerSuggestions/ShippingPartnerSuggestionsDataSourcePoller.php
+--- woocommerce-10.6.1/src/Admin/Features/ShippingPartnerSuggestions/ShippingPartnerSuggestionsDataSourcePoller.php	2024-11-13 20:17:00.000000000 +0000
++++ woocommerce-10.6.1-patched/src/Admin/Features/ShippingPartnerSuggestions/ShippingPartnerSuggestionsDataSourcePoller.php	2026-03-30 18:27:59.938436930 +0100
+@@ -45,6 +45,8 @@
+ 	 * @return array
+ 	 */
+ 	public static function get_data_sources() {
++		return []; // No phoning home for shipping partner suggestions.
++
+ 		return array(
+ 			WC_Helper::get_woocommerce_com_base_url() . 'wp-json/wccom/shipping-partner-suggestions/2.0/suggestions.json',
+ 		);
+diff -ruN woocommerce-10.6.1/src/Admin/RemoteInboxNotifications/RemoteInboxNotificationsDataSourcePoller.php woocommerce-10.6.1-patched/src/Admin/RemoteInboxNotifications/RemoteInboxNotificationsDataSourcePoller.php
+--- woocommerce-10.6.1/src/Admin/RemoteInboxNotifications/RemoteInboxNotificationsDataSourcePoller.php	2024-11-13 20:17:00.000000000 +0000
++++ woocommerce-10.6.1-patched/src/Admin/RemoteInboxNotifications/RemoteInboxNotificationsDataSourcePoller.php	2026-03-30 18:28:05.974521337 +0100
+@@ -231,6 +231,8 @@
+ 	 * @return array
+ 	 */
+ 	public static function get_data_sources() {
++		return []; // No phoning home for remote inbox notifications.
++
+ 		return array(
+ 			WC_Helper::get_woocommerce_com_base_url() . 'wp-json/wccom/inbox-notifications/2.0/notifications.json',
+ 		);
+diff -ruN woocommerce-10.6.1/src/Blocks/DependencyDetection.php woocommerce-10.6.1-patched/src/Blocks/DependencyDetection.php
+--- woocommerce-10.6.1/src/Blocks/DependencyDetection.php	2026-01-19 09:46:18.000000000 +0000
++++ woocommerce-10.6.1-patched/src/Blocks/DependencyDetection.php	2026-03-30 18:20:52.360355117 +0100
 @@ -35,7 +35,7 @@
  	 * Maps window.wc.* property names to their required script handles.
  	 *
@@ -163,9 +236,21 @@ diff -ur woocommerce-10.6.1/src/Blocks/DependencyDetection.php woocommerce-10.6.
  	 *
  	 * @var array<string, string>
  	 */
-diff -ur woocommerce-10.6.1/src/Internal/Admin/RemoteFreeExtensions/RemoteFreeExtensionsDataSourcePoller.php woocommerce-10.6.1-patched/src/Internal/Admin/RemoteFreeExtensions/RemoteFreeExtensionsDataSourcePoller.php
---- woocommerce-10.6.1/src/Internal/Admin/RemoteFreeExtensions/RemoteFreeExtensionsDataSourcePoller.php	2026-03-13 06:47:55.521836931 +0000
-+++ woocommerce-10.6.1-patched/src/Internal/Admin/RemoteFreeExtensions/RemoteFreeExtensionsDataSourcePoller.php	2026-03-28 07:07:30.695643557 +0000
+diff -ruN woocommerce-10.6.1/src/Internal/Admin/Loader.php woocommerce-10.6.1-patched/src/Internal/Admin/Loader.php
+--- woocommerce-10.6.1/src/Internal/Admin/Loader.php	2025-05-12 17:07:28.000000000 +0100
++++ woocommerce-10.6.1-patched/src/Internal/Admin/Loader.php	2026-03-30 18:38:39.031259948 +0100
+@@ -350,7 +350,7 @@
+ 		 */
+ 		$preload_data_endpoints = apply_filters( 'woocommerce_component_settings_preload_endpoints', array() );
+ 
+-		$preload_data_endpoints['jetpackStatus'] = '/jetpack/v4/connection';
++		// $preload_data_endpoints['jetpackStatus'] = '/jetpack/v4/connection'; // Jetpack connection disabled.
+ 		if ( ! empty( $preload_data_endpoints ) ) {
+ 			$preload_data = array_reduce(
+ 				array_values( $preload_data_endpoints ),
+diff -ruN woocommerce-10.6.1/src/Internal/Admin/RemoteFreeExtensions/RemoteFreeExtensionsDataSourcePoller.php woocommerce-10.6.1-patched/src/Internal/Admin/RemoteFreeExtensions/RemoteFreeExtensionsDataSourcePoller.php
+--- woocommerce-10.6.1/src/Internal/Admin/RemoteFreeExtensions/RemoteFreeExtensionsDataSourcePoller.php	2024-11-13 20:17:00.000000000 +0000
++++ woocommerce-10.6.1-patched/src/Internal/Admin/RemoteFreeExtensions/RemoteFreeExtensionsDataSourcePoller.php	2026-03-30 18:20:52.360355117 +0100
 @@ -47,6 +47,8 @@
  	 * @return array
  	 */
@@ -175,9 +260,9 @@ diff -ur woocommerce-10.6.1/src/Internal/Admin/RemoteFreeExtensions/RemoteFreeEx
  		return array(
  			WC_Helper::get_woocommerce_com_base_url() . 'wp-json/wccom/obw-free-extensions/4.0/extensions.json',
  		);
-diff -ur woocommerce-10.6.1/src/Internal/Admin/Settings/Payments.php woocommerce-10.6.1-patched/src/Internal/Admin/Settings/Payments.php
---- woocommerce-10.6.1/src/Internal/Admin/Settings/Payments.php	2026-03-13 06:47:55.521836931 +0000
-+++ woocommerce-10.6.1-patched/src/Internal/Admin/Settings/Payments.php	2026-03-28 07:07:30.695643557 +0000
+diff -ruN woocommerce-10.6.1/src/Internal/Admin/Settings/Payments.php woocommerce-10.6.1-patched/src/Internal/Admin/Settings/Payments.php
+--- woocommerce-10.6.1/src/Internal/Admin/Settings/Payments.php	2026-03-12 16:10:34.000000000 +0000
++++ woocommerce-10.6.1-patched/src/Internal/Admin/Settings/Payments.php	2026-03-30 18:20:52.360355117 +0100
 @@ -88,7 +88,7 @@
  		// Only include suggestions if the requesting user can install plugins.
  		$suggestions = array();
@@ -187,9 +272,9 @@ diff -ur woocommerce-10.6.1/src/Internal/Admin/Settings/Payments.php woocommerce
  		}
  		// If we have preferred suggestions, add them to the providers list.
  		if ( ! empty( $suggestions['preferred'] ) ) {
-diff -ur woocommerce-10.6.1/src/Internal/Admin/Settings/PaymentsProviders.php woocommerce-10.6.1-patched/src/Internal/Admin/Settings/PaymentsProviders.php
---- woocommerce-10.6.1/src/Internal/Admin/Settings/PaymentsProviders.php	2026-03-13 06:47:55.521836931 +0000
-+++ woocommerce-10.6.1-patched/src/Internal/Admin/Settings/PaymentsProviders.php	2026-03-28 07:07:30.695643557 +0000
+diff -ruN woocommerce-10.6.1/src/Internal/Admin/Settings/PaymentsProviders.php woocommerce-10.6.1-patched/src/Internal/Admin/Settings/PaymentsProviders.php
+--- woocommerce-10.6.1/src/Internal/Admin/Settings/PaymentsProviders.php	2026-03-12 16:10:34.000000000 +0000
++++ woocommerce-10.6.1-patched/src/Internal/Admin/Settings/PaymentsProviders.php	2026-03-30 18:20:52.360355117 +0100
 @@ -651,6 +651,9 @@
  	 * @throws Exception If there are malformed or invalid suggestions.
  	 */
@@ -200,9 +285,21 @@ diff -ur woocommerce-10.6.1/src/Internal/Admin/Settings/PaymentsProviders.php wo
  		// Normalize the location to uppercase.
  		$location = strtoupper( $location );
  
-diff -ur woocommerce-10.6.1/vendor/automattic/jetpack-connection/src/class-plugin.php woocommerce-10.6.1-patched/vendor/automattic/jetpack-connection/src/class-plugin.php
---- woocommerce-10.6.1/vendor/automattic/jetpack-connection/src/class-plugin.php	2026-03-13 06:47:55.537837141 +0000
-+++ woocommerce-10.6.1-patched/vendor/automattic/jetpack-connection/src/class-plugin.php	2026-03-28 07:07:30.767644444 +0000
+diff -ruN woocommerce-10.6.1/src/Internal/Admin/Settings.php woocommerce-10.6.1-patched/src/Internal/Admin/Settings.php
+--- woocommerce-10.6.1/src/Internal/Admin/Settings.php	2026-02-23 12:58:34.000000000 +0000
++++ woocommerce-10.6.1-patched/src/Internal/Admin/Settings.php	2026-03-30 18:38:38.703255459 +0100
+@@ -143,7 +143,7 @@
+ 
+ 		//phpcs:ignore
+ 		$preload_data_endpoints = apply_filters( 'woocommerce_component_settings_preload_endpoints', array() );
+-		$preload_data_endpoints['jetpackStatus'] = '/jetpack/v4/connection';
++		// $preload_data_endpoints['jetpackStatus'] = '/jetpack/v4/connection'; // Jetpack connection disabled.
+ 		if ( ! empty( $preload_data_endpoints ) ) {
+ 			$preload_data = array_reduce(
+ 				array_values( $preload_data_endpoints ),
+diff -ruN woocommerce-10.6.1/vendor/automattic/jetpack-connection/src/class-plugin.php woocommerce-10.6.1-patched/vendor/automattic/jetpack-connection/src/class-plugin.php
+--- woocommerce-10.6.1/vendor/automattic/jetpack-connection/src/class-plugin.php	2025-09-01 19:44:48.000000000 +0100
++++ woocommerce-10.6.1-patched/vendor/automattic/jetpack-connection/src/class-plugin.php	2026-03-30 18:20:52.360355117 +0100
 @@ -47,7 +47,7 @@
  		$this->slug = $slug;
  
@@ -212,9 +309,9 @@ diff -ur woocommerce-10.6.1/vendor/automattic/jetpack-connection/src/class-plugi
  	}
  
  	/**
-diff -ur woocommerce-10.6.1/woocommerce.php woocommerce-10.6.1-patched/woocommerce.php
---- woocommerce-10.6.1/woocommerce.php	2026-03-13 06:47:55.545837247 +0000
-+++ woocommerce-10.6.1-patched/woocommerce.php	2026-03-28 07:07:30.711643754 +0000
+diff -ruN woocommerce-10.6.1/woocommerce.php woocommerce-10.6.1-patched/woocommerce.php
+--- woocommerce-10.6.1/woocommerce.php	2026-03-12 16:10:34.000000000 +0000
++++ woocommerce-10.6.1-patched/woocommerce.php	2026-03-30 18:28:10.654586762 +0100
 @@ -65,3 +65,18 @@
  if ( class_exists( \Automattic\Jetpack\Connection\Rest_Authentication::class ) ) {
  	\Automattic\Jetpack\Connection\Rest_Authentication::init();
@@ -225,7 +322,7 @@ diff -ur woocommerce-10.6.1/woocommerce.php woocommerce-10.6.1-patched/woocommer
 +	'plugin_row_meta',
 +	function ( $links, $file ) {
 +		if ( $file == 'woocommerce/woocommerce.php' ) {
-+			$links['wpatcher'] = '<span style="background-color: purple; color: white; padding:0.2em 0.5em; font-weight: 700; border-radius: 0.3em">PATCHED : 2026-03-20</span>';
++			$links['wpatcher'] = '<span style="background-color: purple; color: white; padding:0.2em 0.5em; font-weight: 700; border-radius: 0.3em">PATCHED : 2026-03-30</span>';
 +		}
 +
 +		return $links;

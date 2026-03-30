@@ -4,12 +4,21 @@ All notable changes to the patch set are documented here, grouped by WooCommerce
 
 ---
 
-## 10.6.1 — 2026-03-19
+## 10.6.1 — 2026-03-30
 
-**New patches:**
-- `WC_Tracks_Client::init()` — added early return to prevent identity cookie hooks being registered on `admin_init`, even when tracking is disabled
-- `WC_WCCOM_Site::load()` — added early return to disable the remote product installation REST endpoints and remove the `determine_current_user` filter that ran on every request
-- `add_woocommerce_tracker_send_event_wrapper()` — added early return as belt-and-braces guard against `WC_Tracker` initialisation via cron
+**New patches (identified via Claude Code Opus analysis):**
+- `Experimental_Abtest::request_assignment()` — early return with empty variations to block A/B test assignment calls to `public-api.wordpress.com`
+- `ShippingPartnerSuggestionsDataSourcePoller::get_data_sources()` — early return `[]` to block shipping partner suggestion fetches from `woocommerce.com`
+- `MarketingRecommendationsDataSourcePoller::get_data_sources()` — early return `[]` to block marketing tab recommendation fetches
+- `MiscRecommendationsDataSourcePoller::get_data_sources()` — early return `[]` to block misc marketing recommendation fetches
+- `RemoteInboxNotificationsDataSourcePoller::get_data_sources()` — early return `[]` to block promotional inbox notification fetches (daily cron)
+- `a8c-address-autocomplete-service.js` `createStatsdURL()` — early return `''` to block frontend tracking pixel to `pixel.wp.com/boom.gif` on checkout
+- Jetpack status preload removed from `Settings.php` and `Loader.php` — eliminates wasted internal REST call to unregistered `/jetpack/v4/connection` route
+
+**Previous 10.6.1 patches (2026-03-19):**
+- `WC_Tracks_Client::init()` — early return to prevent identity cookie hooks
+- `WC_WCCOM_Site::load()` — early return to disable remote product installation REST endpoints
+- `add_woocommerce_tracker_send_event_wrapper()` — early return to guard against cron-based tracker initialisation
 
 **Existing patches carried forward:**
 - `WC_Site_Tracking::is_tracking_enabled()` unconditional `false`
@@ -19,6 +28,16 @@ All notable changes to the patch set are documented here, grouped by WooCommerce
 - Options enforcement block (7 options forced to `no`)
 - `wcTracks` JavaScript stub
 - PATCHED badge in plugin list
+
+---
+
+## Project changes — 2026-03-30
+
+- Added `scripts/prepare-analysis.sh` — automated download, extraction, version detection, and patch application for new WooCommerce releases
+- Added `scripts/analyse-woocommerce.md` — 11-phase analysis runbook for Claude Code Opus to systematically identify new patch targets (outbound HTTP calls, cron tasks, JS tracking, AJAX handlers, option defaults, remote logging, REST endpoints)
+- Added `docs/patch-targets.md` — research notes documenting all current patch targets, future candidates, and external domains contacted by unpatched WooCommerce
+- Added `CLAUDE.md` for Claude Code context
+- Added `.gitignore` for `work/` directory
 
 ---
 
