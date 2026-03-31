@@ -4,6 +4,12 @@ All notable changes to the patch set are documented here, grouped by WooCommerce
 
 ---
 
+## 10.6.2 — 2026-03-31
+
+Patch carried forward from 10.6.1 with line-number adjustments.
+
+---
+
 ## 10.6.1 — 2026-03-30
 
 **New patches (identified via Claude Code Opus analysis):**
