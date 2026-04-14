@@ -1,1 +1,16 @@
+# Scratch space for prepare-analysis.sh: clean + patched WooCommerce source
+# trees and downloaded zips. Regenerated on demand; never committed.
 work/
+
+# Patch artefacts — would be disastrous if they landed inside patches/
+*.rej
+*.orig
+
+# Editor / OS cruft
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+.idea/
+.vscode/

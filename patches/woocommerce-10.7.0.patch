@@ -1,0 +1,333 @@
+diff -ruN '--exclude=*.orig' '--exclude=*.rej' woocommerce-10.7.0/assets/js/frontend/a8c-address-autocomplete-service.js woocommerce-10.7.0-patched/assets/js/frontend/a8c-address-autocomplete-service.js
+--- woocommerce-10.7.0/assets/js/frontend/a8c-address-autocomplete-service.js	2025-07-29 08:34:58.000000000 +0100
++++ woocommerce-10.7.0-patched/assets/js/frontend/a8c-address-autocomplete-service.js	2026-04-14 16:38:49.120305636 +0100
+@@ -467,6 +467,8 @@
+ }
+ 
+ function createStatsdURL( sectionName, events ) {
++	// Disable address autocomplete tracking pixel to pixel.wp.com.
++	return '';
+ 	if ( ! Array.isArray( events ) ) {
+ 		events = [ events ]; // Only a single event was passed to process.
+ 	}
+diff -ruN '--exclude=*.orig' '--exclude=*.rej' woocommerce-10.7.0/includes/admin/helper/class-wc-helper.php woocommerce-10.7.0-patched/includes/admin/helper/class-wc-helper.php
+--- woocommerce-10.7.0/includes/admin/helper/class-wc-helper.php	2026-02-23 12:58:34.000000000 +0000
++++ woocommerce-10.7.0-patched/includes/admin/helper/class-wc-helper.php	2026-04-14 16:38:49.120305636 +0100
+@@ -1733,6 +1733,8 @@
+ 	 * phpcs:ignore Squiz.Commenting.FunctionCommentThrowTag.Missing -- As we wrap the throw in a try/catch.
+ 	 */
+ 	public static function get_product_usage_notice_rules() {
++        return []; // Stop calling home when we don't need to.
++        
+ 		$cache_key = '_woocommerce_helper_product_usage_notice_rules';
+ 		$data      = get_transient( $cache_key );
+ 		if ( false !== $data ) {
+diff -ruN '--exclude=*.orig' '--exclude=*.rej' woocommerce-10.7.0/includes/admin/marketplace-suggestions/class-wc-marketplace-suggestions.php woocommerce-10.7.0-patched/includes/admin/marketplace-suggestions/class-wc-marketplace-suggestions.php
+--- woocommerce-10.7.0/includes/admin/marketplace-suggestions/class-wc-marketplace-suggestions.php	2025-07-29 08:34:58.000000000 +0100
++++ woocommerce-10.7.0-patched/includes/admin/marketplace-suggestions/class-wc-marketplace-suggestions.php	2026-04-14 16:38:49.120305636 +0100
+@@ -163,6 +163,9 @@
+ 	 * @return bool
+ 	 */
+ 	public static function allow_suggestions() {
++        // 2025-09-22 PF. Just don't.
++        return false;
++        
+ 		// We currently only support English suggestions.
+ 		$locale             = get_locale();
+ 		$suggestion_locales = array(
+diff -ruN '--exclude=*.orig' '--exclude=*.rej' woocommerce-10.7.0/includes/class-woocommerce.php woocommerce-10.7.0-patched/includes/class-woocommerce.php
+--- woocommerce-10.7.0/includes/class-woocommerce.php	2026-04-14 12:01:26.000000000 +0100
++++ woocommerce-10.7.0-patched/includes/class-woocommerce.php	2026-04-14 16:38:49.120305636 +0100
+@@ -315,7 +315,7 @@
+ 
+ 		add_action( 'plugins_loaded', array( $this, 'on_plugins_loaded' ), -1 );
+ 		add_action( 'plugins_loaded', array( $this, 'init_customizer' ) );
+-		add_action( 'plugins_loaded', array( $this, 'init_jetpack_connection_config' ), 1 );
++		// add_action( 'plugins_loaded', array( $this, 'init_jetpack_connection_config' ), 1 );
+ 		add_action( 'admin_notices', array( $this, 'build_dependencies_notice' ) );
+ 		add_action( 'after_setup_theme', array( $this, 'setup_environment' ) );
+ 		add_action( 'after_setup_theme', array( $this, 'include_template_functions' ), 11 );
+@@ -326,7 +326,18 @@
+ 		add_action( 'init', array( $this, 'add_image_sizes' ) );
+ 		add_action( 'init', array( $this, 'load_rest_api' ) );
+ 		if ( $this->is_request( 'admin' ) || ( $this->is_rest_api_request() && ! $this->is_store_api_request() ) || ( defined( 'WP_CLI' ) && WP_CLI ) ) {
+-			add_action( 'init', array( 'WC_Site_Tracking', 'init' ) );
++            // Even with site usage tracking disabled, Woo still puts loads of tracking stuff into the browser.
++            // Let's get rid of that here.
++			// add_action( 'init', array( 'WC_Site_Tracking', 'init' ) );
++            // We need a stub so that some secondary scripts don't generate errors.
++            add_action( 'admin_footer', function(){
++                echo '<script type="text/javascript">';
++                echo 'window.wcTracks = window.wcTracks || {};';
++                echo 'window.wcTracks.isEnabled = false;';
++                echo 'window.wcTracks.validateEvent = () => {};';
++                echo 'window.wcTracks.recordEvent = () => {};';
++                echo '</script>';
++            });
+ 		}
+ 		add_action( 'switch_blog', array( $this, 'wpdb_table_fix' ), 0 );
+ 		add_action( 'activated_plugin', array( $this, 'activated_plugin' ) );
+@@ -747,8 +758,8 @@
+ 		include_once WC_ABSPATH . 'includes/class-wc-logger.php';
+ 		include_once WC_ABSPATH . 'includes/queue/class-wc-action-queue.php';
+ 		include_once WC_ABSPATH . 'includes/queue/class-wc-queue.php';
+-		include_once WC_ABSPATH . 'includes/admin/marketplace-suggestions/class-wc-marketplace-updater.php';
+-		include_once WC_ABSPATH . 'includes/admin/class-wc-admin-marketplace-promotions.php';
++		// include_once WC_ABSPATH . 'includes/admin/marketplace-suggestions/class-wc-marketplace-updater.php';
++		// include_once WC_ABSPATH . 'includes/admin/class-wc-admin-marketplace-promotions.php';
+ 		include_once WC_ABSPATH . 'includes/blocks/class-wc-blocks-utils.php';
+ 
+ 		/**
+@@ -929,6 +940,23 @@
+ 		 */
+ 		do_action( 'before_woocommerce_init' ); // phpcs:ignore WooCommerce.Commenting.CommentHooks.MissingSinceComment
+ 
++        // Force some options to no and autoload them.
++        // 'woocommerce_feature_order_attribution_enabled',
++        $options_to_no = [
++            'woocommerce_allow_tracking',
++            'marketplace_suggestions',
++            'woocommerce_show_marketplace_suggestions',
++            'woocommerce_feature_remote_logging_enabled',
++            'woocommerce_feature_reactify-classic-payments-settings_enabled',
++            'woocommerce_feature_blueprint_enabled',
++            'woocommerce_feature_point_of_sale_enabled'
++        ];
++        foreach( $options_to_no as $option_name ) {
++            if( filter_var( get_option( $option_name, false ),  FILTER_VALIDATE_BOOLEAN ) !== false ) {
++                update_option( $option_name, 'no', true );
++            }
++        }
++
+ 		// Set up localisation.
+ 		$this->load_plugin_textdomain();
+ 
+@@ -1519,6 +1547,9 @@
+ 	 * @internal For exclusive usage of WooCommerce core, backwards compatibility not guaranteed.
+ 	 */
+ 	public function add_woocommerce_tracker_send_event_wrapper() {
++        // Never add tracking. Avoid leaking site data and consuming server resource.
++        return;
++        
+ 		if ( true !== wc_string_to_bool( get_option( 'woocommerce_allow_tracking', 'no' ) ) ) {
+ 			return;
+ 		}
+diff -ruN '--exclude=*.orig' '--exclude=*.rej' woocommerce-10.7.0/includes/react-admin/class-experimental-abtest.php woocommerce-10.7.0-patched/includes/react-admin/class-experimental-abtest.php
+--- woocommerce-10.7.0/includes/react-admin/class-experimental-abtest.php	2025-03-03 17:28:12.000000000 +0000
++++ woocommerce-10.7.0-patched/includes/react-admin/class-experimental-abtest.php	2026-04-14 16:38:49.120305636 +0100
+@@ -153,6 +153,9 @@
+ 	 * @return array|\WP_Error A/B test variation error on failure.
+ 	 */
+ 	public function request_assignment( $args ) {
++		// No A/B test assignments from WordPress.com. Return control variant.
++		return array( 'body' => wp_json_encode( array( 'variations' => array() ) ) );
++
+ 		// Request as authenticated wp user.
+ 		if ( $this->as_auth_wpcom_user && class_exists( Jetpack_Connection_Manager::class ) ) {
+ 			$jetpack_connection_manager = new Jetpack_Connection_Manager();
+diff -ruN '--exclude=*.orig' '--exclude=*.rej' woocommerce-10.7.0/includes/tracks/class-wc-site-tracking.php woocommerce-10.7.0-patched/includes/tracks/class-wc-site-tracking.php
+--- woocommerce-10.7.0/includes/tracks/class-wc-site-tracking.php	2026-02-23 12:58:34.000000000 +0000
++++ woocommerce-10.7.0-patched/includes/tracks/class-wc-site-tracking.php	2026-04-14 16:38:49.120305636 +0100
+@@ -17,6 +17,9 @@
+ 	 * @return bool
+ 	 */
+ 	public static function is_tracking_enabled() {
++        // Never use remote logging
++        return false;
++        
+ 		/**
+ 		 * Don't track users if a filter has been applied to turn it off.
+ 		 * `woocommerce_apply_tracking` will be deprecated. Please use
+diff -ruN '--exclude=*.orig' '--exclude=*.rej' woocommerce-10.7.0/includes/tracks/class-wc-tracks-client.php woocommerce-10.7.0-patched/includes/tracks/class-wc-tracks-client.php
+--- woocommerce-10.7.0/includes/tracks/class-wc-tracks-client.php	2026-01-19 09:46:18.000000000 +0000
++++ woocommerce-10.7.0-patched/includes/tracks/class-wc-tracks-client.php	2026-04-14 16:38:49.120305636 +0100
+@@ -50,6 +50,9 @@
+ 	 * @return void
+ 	 */
+ 	public static function init() {
++        // Abaort - never set the identity cookie.
++        return;
++        
+ 		// Use wp hook for setting the identity cookie to avoid headers already sent warnings.
+ 		add_action( 'admin_init', array( __CLASS__, 'maybe_set_identity_cookie' ) );
+ 	}
+diff -ruN '--exclude=*.orig' '--exclude=*.rej' woocommerce-10.7.0/includes/wccom-site/class-wc-wccom-site.php woocommerce-10.7.0-patched/includes/wccom-site/class-wc-wccom-site.php
+--- woocommerce-10.7.0/includes/wccom-site/class-wc-wccom-site.php	2024-12-18 17:19:16.000000000 +0000
++++ woocommerce-10.7.0-patched/includes/wccom-site/class-wc-wccom-site.php	2026-04-14 16:38:49.120305636 +0100
+@@ -26,6 +26,9 @@
+ 	 * @since 3.7.0
+ 	 */
+ 	public static function load() {
++        // Disable remote product installation from WooCommerce.com
++        return;
++        
+ 		self::includes();
+ 
+ 		add_action( 'woocommerce_wccom_install_products', array( 'WC_WCCOM_Site_Installer', 'install' ) );
+diff -ruN '--exclude=*.orig' '--exclude=*.rej' woocommerce-10.7.0/src/Admin/Features/MarketingRecommendations/MarketingRecommendationsDataSourcePoller.php woocommerce-10.7.0-patched/src/Admin/Features/MarketingRecommendations/MarketingRecommendationsDataSourcePoller.php
+--- woocommerce-10.7.0/src/Admin/Features/MarketingRecommendations/MarketingRecommendationsDataSourcePoller.php	2024-11-13 20:17:00.000000000 +0000
++++ woocommerce-10.7.0-patched/src/Admin/Features/MarketingRecommendations/MarketingRecommendationsDataSourcePoller.php	2026-04-14 16:38:49.120305636 +0100
+@@ -51,6 +51,8 @@
+ 	 * @return array
+ 	 */
+ 	public static function get_data_sources() {
++		return []; // No phoning home for marketing recommendations.
++
+ 		return array(
+ 			WC_Helper::get_woocommerce_com_base_url() . 'wp-json/wccom/marketing-tab/1.3/recommendations.json',
+ 		);
+diff -ruN '--exclude=*.orig' '--exclude=*.rej' woocommerce-10.7.0/src/Admin/Features/MarketingRecommendations/MiscRecommendationsDataSourcePoller.php woocommerce-10.7.0-patched/src/Admin/Features/MarketingRecommendations/MiscRecommendationsDataSourcePoller.php
+--- woocommerce-10.7.0/src/Admin/Features/MarketingRecommendations/MiscRecommendationsDataSourcePoller.php	2024-11-13 20:17:00.000000000 +0000
++++ woocommerce-10.7.0-patched/src/Admin/Features/MarketingRecommendations/MiscRecommendationsDataSourcePoller.php	2026-04-14 16:38:49.120305636 +0100
+@@ -59,6 +59,8 @@
+ 	 * @return array
+ 	 */
+ 	public static function get_data_sources() {
++		return []; // No phoning home for misc recommendations.
++
+ 		return array(
+ 			WC_Helper::get_woocommerce_com_base_url() . 'wp-json/wccom/marketing-tab/misc/recommendations.json',
+ 		);
+diff -ruN '--exclude=*.orig' '--exclude=*.rej' woocommerce-10.7.0/src/Admin/Features/PaymentGatewaySuggestions/PaymentGatewaySuggestionsDataSourcePoller.php woocommerce-10.7.0-patched/src/Admin/Features/PaymentGatewaySuggestions/PaymentGatewaySuggestionsDataSourcePoller.php
+--- woocommerce-10.7.0/src/Admin/Features/PaymentGatewaySuggestions/PaymentGatewaySuggestionsDataSourcePoller.php	2024-11-13 20:17:00.000000000 +0000
++++ woocommerce-10.7.0-patched/src/Admin/Features/PaymentGatewaySuggestions/PaymentGatewaySuggestionsDataSourcePoller.php	2026-04-14 16:38:49.120305636 +0100
+@@ -45,6 +45,8 @@
+ 	 * @return array
+ 	 */
+ 	public static function get_data_sources() {
++        return []; // 2026-03-28 PF. Short-circuit
++        
+ 		$data_sources = array(
+ 			WC_Helper::get_woocommerce_com_base_url() . 'wp-json/wccom/payment-gateway-suggestions/2.0/suggestions.json',
+ 		);
+diff -ruN '--exclude=*.orig' '--exclude=*.rej' woocommerce-10.7.0/src/Admin/Features/ShippingPartnerSuggestions/ShippingPartnerSuggestionsDataSourcePoller.php woocommerce-10.7.0-patched/src/Admin/Features/ShippingPartnerSuggestions/ShippingPartnerSuggestionsDataSourcePoller.php
+--- woocommerce-10.7.0/src/Admin/Features/ShippingPartnerSuggestions/ShippingPartnerSuggestionsDataSourcePoller.php	2024-11-13 20:17:00.000000000 +0000
++++ woocommerce-10.7.0-patched/src/Admin/Features/ShippingPartnerSuggestions/ShippingPartnerSuggestionsDataSourcePoller.php	2026-04-14 16:38:49.120305636 +0100
+@@ -45,6 +45,8 @@
+ 	 * @return array
+ 	 */
+ 	public static function get_data_sources() {
++		return []; // No phoning home for shipping partner suggestions.
++
+ 		return array(
+ 			WC_Helper::get_woocommerce_com_base_url() . 'wp-json/wccom/shipping-partner-suggestions/2.0/suggestions.json',
+ 		);
+diff -ruN '--exclude=*.orig' '--exclude=*.rej' woocommerce-10.7.0/src/Admin/RemoteInboxNotifications/RemoteInboxNotificationsDataSourcePoller.php woocommerce-10.7.0-patched/src/Admin/RemoteInboxNotifications/RemoteInboxNotificationsDataSourcePoller.php
+--- woocommerce-10.7.0/src/Admin/RemoteInboxNotifications/RemoteInboxNotificationsDataSourcePoller.php	2024-11-13 20:17:00.000000000 +0000
++++ woocommerce-10.7.0-patched/src/Admin/RemoteInboxNotifications/RemoteInboxNotificationsDataSourcePoller.php	2026-04-14 16:38:49.120305636 +0100
+@@ -231,6 +231,8 @@
+ 	 * @return array
+ 	 */
+ 	public static function get_data_sources() {
++		return []; // No phoning home for remote inbox notifications.
++
+ 		return array(
+ 			WC_Helper::get_woocommerce_com_base_url() . 'wp-json/wccom/inbox-notifications/2.0/notifications.json',
+ 		);
+diff -ruN '--exclude=*.orig' '--exclude=*.rej' woocommerce-10.7.0/src/Blocks/DependencyDetection.php woocommerce-10.7.0-patched/src/Blocks/DependencyDetection.php
+--- woocommerce-10.7.0/src/Blocks/DependencyDetection.php	2026-01-19 09:46:18.000000000 +0000
++++ woocommerce-10.7.0-patched/src/Blocks/DependencyDetection.php	2026-04-14 16:38:49.120305636 +0100
+@@ -35,7 +35,7 @@
+ 	 * Maps window.wc.* property names to their required script handles.
+ 	 *
+ 	 * This is the source of truth for both PHP and JS dependency detection.
+-	 * Based on wcDepMap and wcHandleMap in client/blocks/bin/webpack-helpers.js.
++	 * Based on wcDepMap and wcHandleMap
+ 	 *
+ 	 * @var array<string, string>
+ 	 */
+diff -ruN '--exclude=*.orig' '--exclude=*.rej' woocommerce-10.7.0/src/Internal/Admin/Loader.php woocommerce-10.7.0-patched/src/Internal/Admin/Loader.php
+--- woocommerce-10.7.0/src/Internal/Admin/Loader.php	2025-05-12 17:07:28.000000000 +0100
++++ woocommerce-10.7.0-patched/src/Internal/Admin/Loader.php	2026-04-14 16:38:49.120305636 +0100
+@@ -350,7 +350,7 @@
+ 		 */
+ 		$preload_data_endpoints = apply_filters( 'woocommerce_component_settings_preload_endpoints', array() );
+ 
+-		$preload_data_endpoints['jetpackStatus'] = '/jetpack/v4/connection';
++		// $preload_data_endpoints['jetpackStatus'] = '/jetpack/v4/connection'; // Jetpack connection disabled.
+ 		if ( ! empty( $preload_data_endpoints ) ) {
+ 			$preload_data = array_reduce(
+ 				array_values( $preload_data_endpoints ),
+diff -ruN '--exclude=*.orig' '--exclude=*.rej' woocommerce-10.7.0/src/Internal/Admin/RemoteFreeExtensions/RemoteFreeExtensionsDataSourcePoller.php woocommerce-10.7.0-patched/src/Internal/Admin/RemoteFreeExtensions/RemoteFreeExtensionsDataSourcePoller.php
+--- woocommerce-10.7.0/src/Internal/Admin/RemoteFreeExtensions/RemoteFreeExtensionsDataSourcePoller.php	2024-11-13 20:17:00.000000000 +0000
++++ woocommerce-10.7.0-patched/src/Internal/Admin/RemoteFreeExtensions/RemoteFreeExtensionsDataSourcePoller.php	2026-04-14 16:38:49.120305636 +0100
+@@ -47,6 +47,8 @@
+ 	 * @return array
+ 	 */
+ 	public static function get_data_sources() {
++        return []; // PF: No phoning home for extension suggestions.
++        
+ 		return array(
+ 			WC_Helper::get_woocommerce_com_base_url() . 'wp-json/wccom/obw-free-extensions/4.0/extensions.json',
+ 		);
+diff -ruN '--exclude=*.orig' '--exclude=*.rej' woocommerce-10.7.0/src/Internal/Admin/Settings/Payments.php woocommerce-10.7.0-patched/src/Internal/Admin/Settings/Payments.php
+--- woocommerce-10.7.0/src/Internal/Admin/Settings/Payments.php	2026-03-12 16:10:34.000000000 +0000
++++ woocommerce-10.7.0-patched/src/Internal/Admin/Settings/Payments.php	2026-04-14 16:38:49.120305636 +0100
+@@ -88,7 +88,7 @@
+ 		// Only include suggestions if the requesting user can install plugins.
+ 		$suggestions = array();
+ 		if ( current_user_can( 'install_plugins' ) ) {
+-			$suggestions = $this->providers->get_extension_suggestions( $location, self::SUGGESTIONS_CONTEXT );
++			// $suggestions = $this->providers->get_extension_suggestions( $location, self::SUGGESTIONS_CONTEXT );
+ 		}
+ 		// If we have preferred suggestions, add them to the providers list.
+ 		if ( ! empty( $suggestions['preferred'] ) ) {
+diff -ruN '--exclude=*.orig' '--exclude=*.rej' woocommerce-10.7.0/src/Internal/Admin/Settings/PaymentsProviders.php woocommerce-10.7.0-patched/src/Internal/Admin/Settings/PaymentsProviders.php
+--- woocommerce-10.7.0/src/Internal/Admin/Settings/PaymentsProviders.php	2026-03-12 16:10:34.000000000 +0000
++++ woocommerce-10.7.0-patched/src/Internal/Admin/Settings/PaymentsProviders.php	2026-04-14 16:38:49.120305636 +0100
+@@ -651,6 +651,9 @@
+ 	 * @throws Exception If there are malformed or invalid suggestions.
+ 	 */
+ 	public function get_extension_suggestions( string $location, string $context = '' ): array {
++        // 2025-09-22 PF. Just don't.
++        return array( 'preferred' => [], 'other' => [] );
++
+ 		// Normalize the location to uppercase.
+ 		$location = strtoupper( $location );
+ 
+diff -ruN '--exclude=*.orig' '--exclude=*.rej' woocommerce-10.7.0/src/Internal/Admin/Settings.php woocommerce-10.7.0-patched/src/Internal/Admin/Settings.php
+--- woocommerce-10.7.0/src/Internal/Admin/Settings.php	2026-02-23 12:58:34.000000000 +0000
++++ woocommerce-10.7.0-patched/src/Internal/Admin/Settings.php	2026-04-14 16:38:49.120305636 +0100
+@@ -143,7 +143,7 @@
+ 
+ 		//phpcs:ignore
+ 		$preload_data_endpoints = apply_filters( 'woocommerce_component_settings_preload_endpoints', array() );
+-		$preload_data_endpoints['jetpackStatus'] = '/jetpack/v4/connection';
++		// $preload_data_endpoints['jetpackStatus'] = '/jetpack/v4/connection'; // Jetpack connection disabled.
+ 		if ( ! empty( $preload_data_endpoints ) ) {
+ 			$preload_data = array_reduce(
+ 				array_values( $preload_data_endpoints ),
+diff -ruN '--exclude=*.orig' '--exclude=*.rej' woocommerce-10.7.0/vendor/automattic/jetpack-connection/src/class-plugin.php woocommerce-10.7.0-patched/vendor/automattic/jetpack-connection/src/class-plugin.php
+--- woocommerce-10.7.0/vendor/automattic/jetpack-connection/src/class-plugin.php	2025-09-01 19:44:48.000000000 +0100
++++ woocommerce-10.7.0-patched/vendor/automattic/jetpack-connection/src/class-plugin.php	2026-04-14 16:38:49.120305636 +0100
+@@ -47,7 +47,7 @@
+ 		$this->slug = $slug;
+ 
+ 		// Initialize Users_Connection_Admin
+-		$this->users_connection_admin = new Users_Connection_Admin();
++		// $this->users_connection_admin = new Users_Connection_Admin();
+ 	}
+ 
+ 	/**
+diff -ruN '--exclude=*.orig' '--exclude=*.rej' woocommerce-10.7.0/woocommerce.php woocommerce-10.7.0-patched/woocommerce.php
+--- woocommerce-10.7.0/woocommerce.php	2026-04-14 12:01:26.000000000 +0100
++++ woocommerce-10.7.0-patched/woocommerce.php	2026-04-14 16:55:29.973540199 +0100
+@@ -65,3 +65,18 @@
+ if ( class_exists( \Automattic\Jetpack\Connection\Rest_Authentication::class ) ) {
+ 	\Automattic\Jetpack\Connection\Rest_Authentication::init();
+ }
++
++// START : wpatcher
++add_filter(
++	'plugin_row_meta',
++	function ( $links, $file ) {
++		if ( $file == 'woocommerce/woocommerce.php' ) {
++			$links['wpatcher'] = '<span style="background-color: purple; color: white; padding:0.2em 0.5em; font-weight: 700; border-radius: 0.3em">PATCHED : 2026-04-14</span>';
++		}
++
++		return $links;
++	},
++	10,
++	2
++);
++// END : wpatcher

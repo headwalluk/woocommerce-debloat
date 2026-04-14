@@ -52,6 +52,7 @@ Patches are provided per WooCommerce version. Check the `patches/` directory for
 
 | WooCommerce | Patch file |
 |---|---|
+| 10.7.0 | `patches/woocommerce-10.7.0.patch` |
 | 10.6.2 | `patches/woocommerce-10.6.2.patch` |
 | 10.6.1 | `patches/woocommerce-10.6.1.patch` |
 | 10.6.0 | `patches/woocommerce-10.6.0.patch` |
@@ -71,7 +72,7 @@ You'll need the original WooCommerce plugin files and `patch` available on your 
 cd /path/to/wp-content/plugins
 
 # Apply the patch
-patch -p1 --directory=woocommerce < /path/to/woocommerce-10.6.2.patch
+patch -p1 --directory=woocommerce < /path/to/woocommerce-10.7.0.patch
 
 # Verify no rejects
 ls woocommerce/**/*.rej 2>/dev/null && echo "Check rejects!" || echo "Clean apply"

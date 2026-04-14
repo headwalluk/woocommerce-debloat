@@ -4,6 +4,17 @@ All notable changes to the patch set are documented here, grouped by WooCommerce
 
 ---
 
+## 10.7.0 — 2026-04-14
+
+Patch carried forward from 10.6.2 with minor line-number adjustments in `includes/class-woocommerce.php`.
+
+Review of 10.7.0 changes found no new patch targets:
+- New `src/Internal/PushNotifications/Dispatchers/WpcomNotificationDispatcher` (Woo Mobile app push via WPCOM) is gated on an active Jetpack connection, which our patch already disables — the feature is inert on patched installs.
+- `src/Admin/Features/Fulfillments` moved from `src/Internal/Fulfillments` but contains no outbound HTTP.
+- No new `DataSourcePoller`, tracks, or `wccom-site` endpoints.
+
+---
+
 ## 10.6.2 — 2026-03-31
 
 Patch carried forward from 10.6.1 with line-number adjustments.
