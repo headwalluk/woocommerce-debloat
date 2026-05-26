@@ -147,11 +147,40 @@ register_rest_route.*telemetry
 
 ## Phase 9: Review new/changed files since last patched version
 
-If the clean source version is newer than the patch version, identify files that have changed between versions. Focus on:
+If the clean source version is newer than the patch version, identify files that have changed between versions. The quickest way is to download the previous WC release alongside the new one and run a directory diff:
+
+```bash
+cd work/
+curl -sSL -o woocommerce-PREV.zip "https://downloads.wordpress.org/plugin/woocommerce.<PREV-VERSION>.zip"
+unzip -qo woocommerce-PREV.zip && mv woocommerce woocommerce-<PREV-VERSION>-clean
+
+# Drop rebuilt JS chunks and .asset.php — they churn every release and add noise
+diff -rq woocommerce-<PREV-VERSION>-clean woocommerce-<NEW-VERSION> \
+  | grep -v '^Files.*assets/client/' \
+  | grep -v '\.asset\.php' \
+  | grep -v 'changelog\.txt\|readme\.txt'
+```
+
+This typically takes a wall of "Files differ" down to a manageable list of truly new files (`Only in …` lines) and meaningfully changed PHP files.
+
+Focus on:
 - New files in `includes/tracks/`, `includes/wccom-site/`, `src/Internal/Admin/`
 - New `DataSourcePoller` classes
 - New cron handlers
 - New admin page controllers that fetch remote data
+- Brand-new `src/Internal/<Subsystem>/` directories — but see the gating check below before flagging
+
+### Feature-flag gating check (do this BEFORE deep-reading a new subsystem)
+
+Many new `src/Internal/<Subsystem>/` directories are registered as experimental features and gated off by default. Before reading their code for outbound HTTP, **check `src/Internal/Features/FeaturesController.php`** for the feature's registration:
+
+```bash
+grep -n -A5 "'<feature_name>'" work/woocommerce-<NEW-VERSION>/src/Internal/Features/FeaturesController.php
+```
+
+If the entry has `'enabled_by_default' => false` and `'is_experimental' => true`, the subsystem is **inert on a default install** and does not need a patch entry. Confirm by grepping for the feature's `should_be_enabled()` / `is_enabled()` method and `feature_is_enabled('<flag>')` callsites — these are the gates that have to flip before any of the new code runs.
+
+This check turned 10.8.0 from "four new tracking-looking subsystems" (PushNotifications WPCOM dispatcher, GraphQL API, OrderReviews, EmailEditor template sync) into a bump-only release in one read.
 
 ## Phase 10: Compile findings
 
@@ -170,11 +199,25 @@ For each approved candidate:
 2. Follow the patch style conventions from CLAUDE.md
 3. Update the PATCHED badge date in `woocommerce.php`
 
-When all changes are applied, generate the candidate patch:
+Before generating the diff, **delete any `.orig` / `.rej` files** that `patch` may have left behind during Phase 1 — they leak into `diff -ruN` output as fake net-new files and inflate the candidate patch (a real-world bump went from 333 lines to 2336 because of this):
 
 ```bash
 cd work/
+find woocommerce-X.Y.Z-patched -name '*.orig' -delete
+find woocommerce-X.Y.Z-patched -name '*.rej' -delete
+```
+
+When all changes are applied and cleanup is done, generate the candidate patch:
+
+```bash
 diff -ruN woocommerce-X.Y.Z woocommerce-X.Y.Z-patched > woocommerce-X.Y.Z-candidate.patch
 ```
 
-The candidate patch will be in `work/woocommerce-X.Y.Z-candidate.patch` for manual testing.
+Sanity-check it applies cleanly on a fresh extraction:
+
+```bash
+rm -rf /tmp/wc-verify && cp -a woocommerce-X.Y.Z /tmp/wc-verify
+cd /tmp/wc-verify && patch -p1 --dry-run < ../woocommerce-X.Y.Z-candidate.patch
+```
+
+The candidate patch will be in `work/woocommerce-X.Y.Z-candidate.patch` for manual testing before promotion to `patches/`.
