@@ -4,6 +4,20 @@ All notable changes to the patch set are documented here, grouped by WooCommerce
 
 ---
 
+## 10.8.0 — 2026-05-26
+
+Patch carried forward from 10.7.0 with line-number adjustments. The 10.7.0 patch applied cleanly against 10.8.0 with no rejects.
+
+Review of 10.8.0 changes found no new patch targets active on a default install. Several large new subsystems were added but all are gated behind experimental feature flags that default to off:
+- `src/Internal/PushNotifications/` — new WPCOM push dispatcher gated by the `push_notifications` feature flag (off by default) and an active Jetpack connection (already disabled by our patch).
+- `src/Internal/Api/` + `src/Api/` — new GraphQL API gated by the `dual_code_graphql_api` feature flag (off by default).
+- `src/Internal/OrderReviews/` + `includes/emails/class-wc-email-customer-review-request.php` — new customer review request feature gated by the `customer_review_request` feature flag (off by default). Local-only; no outbound HTTP.
+- `src/Internal/EmailEditor/WCTransactionalEmails/` — local template housekeeping; no outbound HTTP.
+
+`class-wc-tracker.php`, `class-wc-helper.php`, `class-wc-tracks-client.php`, `class-wc-site-tracking.php`, and the `a8c-address-autocomplete-service.js` frontend file are byte-identical to 10.7.0.
+
+---
+
 ## 10.7.0 — 2026-04-14
 
 Patch carried forward from 10.6.2 with minor line-number adjustments in `includes/class-woocommerce.php`.
