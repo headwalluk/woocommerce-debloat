@@ -4,6 +4,14 @@ All notable changes to the patch set are documented here, grouped by WooCommerce
 
 ---
 
+## 10.8.1 — 2026-05-28
+
+Bump-only release. The 10.8.0 patch applied cleanly against 10.8.1 with no rejects.
+
+10.8.1 is a hotfix: the only meaningful source change versus 10.8.0 is a defensive `require_once` in `includes/admin/settings/class-wc-settings-general.php` that pre-loads `src/Enums/DefaultCustomerAddress.php` to avoid a "Class not found" fatal during a same-request in-place upgrade ([woocommerce#54657](https://github.com/woocommerce/woocommerce/issues/54657)). It introduces no tracking or outbound HTTP and is not a patch target. Remaining diffs are version-string bumps (`woocommerce.php`, `class-woocommerce.php`) and translation/composer-metadata churn. No new packages or classes.
+
+---
+
 ## 10.8.0 — 2026-05-26
 
 Patch carried forward from 10.7.0 with line-number adjustments. The 10.7.0 patch applied cleanly against 10.8.0 with no rejects.
