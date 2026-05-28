@@ -53,12 +53,9 @@ Patches are provided per WooCommerce version. Check the `patches/` directory for
 | WooCommerce | Patch file |
 |---|---|
 | 10.8.1 | `patches/woocommerce-10.8.1.patch` |
-| 10.8.0 | `patches/woocommerce-10.8.0.patch` |
 | 10.7.0 | `patches/woocommerce-10.7.0.patch` |
 | 10.6.2 | `patches/woocommerce-10.6.2.patch` |
-| 10.6.1 | `patches/woocommerce-10.6.1.patch` |
-| 10.6.0 | `patches/woocommerce-10.6.0.patch` |
-| 10.5.x | `patches/woocommerce-10.5.x.patch` |
+| 10.5.3 | `patches/woocommerce-10.5.3.patch` |
 | Older versions | See `patches/` directory |
 
 Patches are maintained on a best-effort basis, typically updated within a few days of a new WooCommerce release.
