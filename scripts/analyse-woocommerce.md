@@ -25,6 +25,13 @@ List each patch target with:
 - Function/method name
 - What the patch does (early return, comment out, stub, etc.)
 
+**Do not drop a hunk just because it looks like telemetry.** Most hunks here are pure phone-home
+suppression and are safe to trim if a target disappears — but at least one is load-bearing:
+`includes/class-wc-payment-gateways.php::record_gateway_event()` is patched as telemetry *and*
+guards a fatal `get_base_country() on null` (null `WC()->countries`) triggered by any plugin that
+writes a payment-gateway option before `init` priority 0. Carry it forward to every WC ≥ 10.7 patch
+and verify the line numbers per version. See `docs/patch-targets.md`.
+
 ## Phase 2: Search for new outbound HTTP calls
 
 Search the **clean** source directory for patterns that make outbound HTTP requests. These are the highest-value targets — they block PHP workers and leak data.

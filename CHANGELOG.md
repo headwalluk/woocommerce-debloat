@@ -4,7 +4,21 @@ All notable changes to the patch set are documented here, grouped by WooCommerce
 
 ---
 
-## 10.8.1 — 2026-05-28
+## 10.8.1 — 2026-06-24
+
+Added one hunk: an early return in `record_gateway_event()`
+(`includes/class-wc-payment-gateways.php`). This method, added around WC 10.7, sends a Tracks
+telemetry event on every payment-gateway enable/disable and builds it with
+`WC()->countries->get_base_country()`. `WC()->countries` is `null` until `WooCommerce::init()` runs
+(WP `init` priority 0), so any plugin that writes a payment-gateway option *before* that point hits a
+fatal `Call to a member function get_base_country() on null`. Observed in the wild on a 10.8.1 site
+where WooCommerce PayPal Payments dispatches its settings migration on `init` priority -1
+(example.com). The method's only terminal effect is `wc_admin_record_tracks_event()`, so the
+early return both removes the phone-home (on-brand for this repo) and eliminates the crash for any
+plugin that triggers it. PPCP is merely the trigger; the null-deref is WooCommerce's defect, which is
+why the fix lives here rather than in PPCP.
+
+### 10.8.1 — 2026-05-28 (initial)
 
 Bump-only release. The 10.8.0 patch applied cleanly against 10.8.1 with no rejects.
 

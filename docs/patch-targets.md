@@ -19,6 +19,7 @@ Last updated: 2026-03-30
 | `includes/class-woocommerce.php` | `wcTracks` JS stub | Injected in `admin_footer` | Prevents console errors from scripts that reference `window.wcTracks` |
 | `includes/react-admin/class-experimental-abtest.php` | `request_assignment()` | Early return empty variations | Blocks A/B test assignment calls to `public-api.wordpress.com` |
 | `assets/js/frontend/a8c-address-autocomplete-service.js` | `createStatsdURL()` | Early return `''` | Blocks frontend tracking pixel to `pixel.wp.com/boom.gif` on checkout |
+| `includes/class-wc-payment-gateways.php` | `record_gateway_event()` | Early return | Suppresses gateway enable/disable Tracks event **and** fixes a fatal `get_base_country() on null` when a plugin writes a gateway option before `init` priority 0 (e.g. PPCP migration at prio -1) |
 
 ### Marketplace & Upsells
 

@@ -35,6 +35,24 @@ diff -ruN woocommerce-10.8.1/includes/admin/marketplace-suggestions/class-wc-mar
  		// We currently only support English suggestions.
  		$locale             = get_locale();
  		$suggestion_locales = array(
+diff -ruN woocommerce-10.8.1/includes/class-wc-payment-gateways.php woocommerce-10.8.1-patched/includes/class-wc-payment-gateways.php
+--- woocommerce-10.8.1/includes/class-wc-payment-gateways.php	2026-05-05 10:26:50.000000000 +0100
++++ woocommerce-10.8.1-patched/includes/class-wc-payment-gateways.php	2026-06-24 19:21:12.837914562 +0100
+@@ -421,6 +421,14 @@
+ 	 * @return void
+ 	 */
+ 	private function record_gateway_event( string $name, $gateway ) {
++		// wpatcher: disable gateway enable/disable Tracks telemetry AND fix a fatal.
++		// This method derefs WC()->countries->get_base_country(), but WC()->countries is null
++		// until WooCommerce::init() (WP `init` priority 0). Any plugin that writes a payment-gateway
++		// option before that point reaches here with a null WC()->countries -> "Call to a member
++		// function get_base_country() on null". (Observed trigger: PPCP fires its settings migration
++		// on `init` priority -1.) The method only ends in wc_admin_record_tracks_event(), so a plain
++		// early return both kills the crash and suppresses the phone-home.
++		return;
+ 		if ( ! function_exists( 'wc_admin_record_tracks_event' ) ) {
+ 			return;
+ 		}
 diff -ruN woocommerce-10.8.1/includes/class-woocommerce.php woocommerce-10.8.1-patched/includes/class-woocommerce.php
 --- woocommerce-10.8.1/includes/class-woocommerce.php	2026-05-27 17:54:04.000000000 +0100
 +++ woocommerce-10.8.1-patched/includes/class-woocommerce.php	2026-05-28 17:37:36.140408520 +0100
@@ -322,7 +340,7 @@ diff -ruN woocommerce-10.8.1/woocommerce.php woocommerce-10.8.1-patched/woocomme
 +	'plugin_row_meta',
 +	function ( $links, $file ) {
 +		if ( $file == 'woocommerce/woocommerce.php' ) {
-+			$links['wpatcher'] = '<span style="background-color: purple; color: white; padding:0.2em 0.5em; font-weight: 700; border-radius: 0.3em">PATCHED : 2026-05-28</span>';
++			$links['wpatcher'] = '<span style="background-color: purple; color: white; padding:0.2em 0.5em; font-weight: 700; border-radius: 0.3em">PATCHED : 2026-06-24</span>';
 +		}
 +
 +		return $links;
