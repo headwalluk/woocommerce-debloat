@@ -4,6 +4,27 @@ All notable changes to the patch set are documented here, grouped by WooCommerce
 
 ---
 
+## 10.9.1 — 2026-06-24
+
+Bump-only release. The 10.8.1 patch applied cleanly against both 10.9.0 and 10.9.1 with no rejects (line offsets only). Per-version patches were regenerated so each applies with zero fuzz/offset on a fresh extraction. The load-bearing `record_gateway_event()` fatal-fix carried forward intact.
+
+Automattic shipped 10.9.0 and 10.9.1 back-to-back on the same day; **10.9.1 is functionally identical to 10.9.0** — the only source change is the version string (`10.9.0` → `10.9.1`) plus a no-op docblock move on the `ProductFeed` `get_entry_count()` interface method. There is effectively one release to review here, not two.
+
+Review of the 10.8.1 → 10.9.x changes found no new patch targets active on a default install. The minor introduced several large new subsystems, but each is gated behind an experimental feature flag that defaults to off (`enabled_by_default => false`, `is_experimental => true`):
+- `src/Api/` + `src/Internal/Api/` — code-first GraphQL API, gated by `dual_code_graphql_api`.
+- `mcp_integration` (WooCommerce MCP) and `agentic_checkout` (Agentic Checkout API for AI agents, e.g. ChatGPT) — both off by default.
+- `src/Internal/ShopperLists/` + StoreApi `ShopperList*` routes — wishlist feature gated by `product_wishlist`; `cart_save_for_later` similarly off.
+- `rest_api_caching` — off by default.
+- Expanded `src/Internal/PushNotifications/` (StockNotification, NotificationPreferences) — the WPCOM dispatcher only fires through an active Jetpack connection and registered mobile push tokens; our patch already disables Jetpack connection init.
+
+Other apparent targets reviewed and cleared:
+- `src/Internal/StockNotifications/Utilities/UtmHelper.php` — appends `utm_source`/`utm_medium` to the merchant's *own* back-in-stock notification email links (first-party order attribution), not a phone-home.
+- `src/Internal/Admin/WCPayPromotion/WCPayPromotionDataSourcePoller.php` — pre-existing (not new in 10.9); already neutralised transitively because it short-circuits to local `DefaultPromotions` when `woocommerce_show_marketplace_suggestions` is `no`, which our options-enforcement block forces.
+
+A patch for 10.9.0 (`patches/woocommerce-10.9.0.patch`) is also published for sites pinned to that build.
+
+---
+
 ## 10.8.1 — 2026-06-24
 
 Added one hunk: an early return in `record_gateway_event()`
