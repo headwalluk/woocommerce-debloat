@@ -4,6 +4,18 @@ All notable changes to the patch set are documented here, grouped by WooCommerce
 
 ---
 
+## 10.9.3 — 2026-07-04
+
+Bump-only release. Automattic skipped 10.9.2 as a public build (its only trace is a `10.9.2` DB migration entry). The 10.9.1 patch applied cleanly against 10.9.3 with zero rejects and zero fuzz; the per-version patch was regenerated so it applies with no offset on a fresh extraction. The load-bearing `record_gateway_event()` fatal-fix carried forward intact — `includes/class-wc-payment-gateways.php` is unchanged from 10.9.1, so its line numbers are identical.
+
+Review of the 10.9.1 → 10.9.3 changes found no new patch targets active on a default install. The full-tree phone-home pattern counts (`wp_remote_*`, `pixel.wp.com`, `tracking.woocommerce.com`) are identical between the two versions. The meaningful diffs:
+- `src/Internal/PushNotifications/PushNotifications.php` + `FeaturesController.php` — the `push_notifications` feature flag was deprecated in 10.9.2 and the feature is now "always enabled" (no longer gated by the experimental flag). **Still not a target:** `should_be_enabled()` now gates purely on `JetpackConnectionManager->is_connected()`, and our patch already severs Jetpack connection init (`init_jetpack_connection_config` commented out, `Users_Connection_Admin` disabled), so the dispatcher stays inert. A new `woocommerce_enhanced_push_notifications_disabled` filter also lets a store force it off. The `wc_update_10902_remove_deprecated_push_notifications_option()` migration just deletes the now-unused option.
+- `src/Admin/API/Settings.php` (new file) — a deliberate 30-line no-op compatibility stub (`register_routes()` is empty); it exists only so a stale in-memory 10.8 controller list doesn't fatal on the deleted class during an update. Registers nothing.
+- `src/Internal/Admin/Settings.php` — defensive `try/catch` + `class_exists` guard around `SettingsUIRequestContext::get_current()`; does not touch our `jetpackStatus` preload hunk.
+- Remaining diffs (`class-wc-settings-page.php`, `class-wc-settings-payment-gateways.php`, `class-wc-email.php`, `WCAdminAssets.php`, `SettingsUIRequestContext.php`, version string, `.pot`/composer autoloads) carry no phone-home behaviour.
+
+---
+
 ## 10.9.1 — 2026-06-24
 
 Bump-only release. The 10.8.1 patch applied cleanly against both 10.9.0 and 10.9.1 with no rejects (line offsets only). Per-version patches were regenerated so each applies with zero fuzz/offset on a fresh extraction. The load-bearing `record_gateway_event()` fatal-fix carried forward intact.
