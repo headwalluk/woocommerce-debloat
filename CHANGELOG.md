@@ -4,6 +4,12 @@ All notable changes to the patch set are documented here, grouped by WooCommerce
 
 ---
 
+## 10.9.4 — 2026-07-08
+
+Bump-only release. Automattic's changelog lists a single fix (VAT-exempt not applied during block checkout for logged-in users, [#66342](https://github.com/woocommerce/woocommerce/pull/66342)). The 10.9.3 patch applied cleanly against 10.9.4 with zero rejects and zero fuzz/offset; the per-version patch was regenerated so it applies with no offset on a fresh extraction. The load-bearing `record_gateway_event()` fatal-fix carried forward intact — `includes/class-wc-payment-gateways.php` is unchanged from 10.9.3, so its line numbers are identical.
+
+A full clean-tree diff (10.9.3 → 10.9.4) confirmed the change is confined to non-target code: only two source files carry real changes — `includes/class-wc-customer.php` (the VAT fix — removes the `save()` no-op-change guard added in 10.9.0) and `includes/class-woocommerce.php` (version string only, not inside any hunk). The remaining diffs are the version bump (`woocommerce.php`), regenerated i18n `.pot`, and Composer/Jetpack autoload maps. No new outbound-HTTP, tracking, or telemetry targets. No review action needed beyond the bump.
+
 ## 10.9.3 — 2026-07-04
 
 Bump-only release. Automattic skipped 10.9.2 as a public build (its only trace is a `10.9.2` DB migration entry). The 10.9.1 patch applied cleanly against 10.9.3 with zero rejects and zero fuzz; the per-version patch was regenerated so it applies with no offset on a fresh extraction. The load-bearing `record_gateway_event()` fatal-fix carried forward intact — `includes/class-wc-payment-gateways.php` is unchanged from 10.9.1, so its line numbers are identical.

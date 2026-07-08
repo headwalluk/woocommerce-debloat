@@ -52,6 +52,7 @@ Patches are provided per WooCommerce version. Check the `patches/` directory for
 
 | WooCommerce | Patch file |
 |---|---|
+| 10.9.4 | `patches/woocommerce-10.9.4.patch` |
 | 10.9.3 | `patches/woocommerce-10.9.3.patch` |
 | 10.9.1 | `patches/woocommerce-10.9.1.patch` |
 | 10.9.0 | `patches/woocommerce-10.9.0.patch` |
