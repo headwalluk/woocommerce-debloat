@@ -315,6 +315,40 @@ diff -ruN woocommerce-10.9.4/src/Internal/Admin/Settings.php woocommerce-10.9.4-
  		if ( ! empty( $preload_data_endpoints ) ) {
  			$preload_data = array_reduce(
  				array_values( $preload_data_endpoints ),
+diff -ruN woocommerce-10.9.4/src/Internal/Admin/WCAdminAssets.php woocommerce-10.9.4-patched/src/Internal/Admin/WCAdminAssets.php
+--- woocommerce-10.9.4/src/Internal/Admin/WCAdminAssets.php	2026-07-02 19:10:50.000000000 +0100
++++ woocommerce-10.9.4-patched/src/Internal/Admin/WCAdminAssets.php	2026-07-15 10:32:55.524857951 +0100
+@@ -248,6 +248,30 @@
+ 		wp_enqueue_script( WC_ADMIN_APP );
+ 		wp_enqueue_style( WC_ADMIN_APP );
+ 
++		// DEBLOAT: short-circuit the wc-admin Jetpack connection check on the client.
++		// The isJetpackConnected resolver unconditionally calls apiFetch( '/jetpack/v4/connection' )
++		// on every wc-admin page load. With the Jetpack connection disabled the route is never
++		// registered, so that request 404s (log noise) and needlessly boots WP/PHP to answer it.
++		// Registering an api-fetch middleware that resolves the path locally as "not connected"
++		// avoids the request entirely — no network round-trip, no PHP, no 404. Only the exact
++		// status endpoint is intercepted; any other path falls through to next() unchanged.
++		if ( wp_script_is( 'wp-api-fetch', 'registered' ) ) {
++			$wc_debloat_jetpack_js = <<<'JS'
++( function ( wp ) {
++	if ( ! wp || ! wp.apiFetch || ! wp.apiFetch.use ) { return; }
++	wp.apiFetch.use( function ( options, next ) {
++		var path = ( options && options.path ) || '';
++		var clean = ( typeof path === 'string' ? path : '' ).split( '?' )[0].replace( /\/+$/, '' );
++		if ( /(^|\/)jetpack\/v4\/connection$/.test( clean ) ) {
++			return Promise.resolve( { isActive: false, isStaging: false, isRegistered: false, isUserConnected: false, hasConnectedOwner: false, offlineMode: { isActive: false }, isPublic: true } );
++		}
++		return next( options );
++	} );
++} )( window.wp );
++JS;
++			wp_add_inline_script( 'wp-api-fetch', $wc_debloat_jetpack_js, 'after' );
++		}
++
+ 		wp_enqueue_style( 'wc-material-icons' );
+ 		wp_enqueue_style( 'wc-onboarding' );
+ 
 diff -ruN woocommerce-10.9.4/vendor/automattic/jetpack-connection/src/class-plugin.php woocommerce-10.9.4-patched/vendor/automattic/jetpack-connection/src/class-plugin.php
 --- woocommerce-10.9.4/vendor/automattic/jetpack-connection/src/class-plugin.php	2025-09-01 19:44:48.000000000 +0100
 +++ woocommerce-10.9.4-patched/vendor/automattic/jetpack-connection/src/class-plugin.php	2026-07-08 18:00:09.623218638 +0100
@@ -329,7 +363,7 @@ diff -ruN woocommerce-10.9.4/vendor/automattic/jetpack-connection/src/class-plug
  	/**
 diff -ruN woocommerce-10.9.4/woocommerce.php woocommerce-10.9.4-patched/woocommerce.php
 --- woocommerce-10.9.4/woocommerce.php	2026-07-07 14:16:46.000000000 +0100
-+++ woocommerce-10.9.4-patched/woocommerce.php	2026-07-08 18:03:06.286227550 +0100
++++ woocommerce-10.9.4-patched/woocommerce.php	2026-07-15 12:52:05.272485326 +0100
 @@ -65,3 +65,18 @@
  if ( class_exists( \Automattic\Jetpack\Connection\Rest_Authentication::class ) ) {
  	\Automattic\Jetpack\Connection\Rest_Authentication::init();
@@ -340,7 +374,7 @@ diff -ruN woocommerce-10.9.4/woocommerce.php woocommerce-10.9.4-patched/woocomme
 +	'plugin_row_meta',
 +	function ( $links, $file ) {
 +		if ( $file == 'woocommerce/woocommerce.php' ) {
-+			$links['wpatcher'] = '<span style="background-color: purple; color: white; padding:0.2em 0.5em; font-weight: 700; border-radius: 0.3em">PATCHED : 2026-07-08</span>';
++			$links['wpatcher'] = '<span style="background-color: purple; color: white; padding:0.2em 0.5em; font-weight: 700; border-radius: 0.3em">PATCHED : 2026-07-15</span>';
 +		}
 +
 +		return $links;

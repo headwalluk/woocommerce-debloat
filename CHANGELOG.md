@@ -4,9 +4,17 @@ All notable changes to the patch set are documented here, grouped by WooCommerce
 
 ---
 
-## 10.9.4 — 2026-07-08
+## 10.9.4 — 2026-07-15
 
-Bump-only release. Automattic's changelog lists a single fix (VAT-exempt not applied during block checkout for logged-in users, [#66342](https://github.com/woocommerce/woocommerce/pull/66342)). The 10.9.3 patch applied cleanly against 10.9.4 with zero rejects and zero fuzz/offset; the per-version patch was regenerated so it applies with no offset on a fresh extraction. The load-bearing `record_gateway_event()` fatal-fix carried forward intact — `includes/class-wc-payment-gateways.php` is unchanged from 10.9.3, so its line numbers are identical.
+**Revised 2026-07-15** to add one new target (below). The original 2026-07-08 patch was bump-only; the WooCommerce-source analysis in the following paragraphs is unchanged.
+
+**New target — client-side Jetpack connection interceptor (`src/Internal/Admin/WCAdminAssets.php`).** Because our patch disables Jetpack connection init (`init_jetpack_connection_config` commented out), the `jetpack/v4/connection` REST route is never registered. But the wc-admin `isJetpackConnected` resolver calls `apiFetch( '/jetpack/v4/connection' )` **unconditionally on every wc-admin page load** (Analytics, etc.) — so that call returned a **404** on every visit: access-log noise, and a needless full WordPress/PHP boot to answer a request whose route we deliberately removed. Note this is a *local* endpoint (`/wp-json/…` is served by the site itself); it is not a phone-home to Jetpack/wp.com.
+
+The fix adds an `@wordpress/api-fetch` middleware (via `wp_add_inline_script( 'wp-api-fetch', … )` in `enqueue_assets()`) that short-circuits **only** the exact `/jetpack/v4/connection` path to a static "not connected" object matching core's `REST_Connector::connection_status()` shape; every other path falls through to `next()` unchanged. The request never leaves the browser — no network round-trip, no PHP, no 404. A stub REST route was considered and rejected: any `/wp-json/` route still boots the full WP stack before the handler runs, so killing the request client-side is strictly better on every axis. Verified on a live 10.9.4 install — the `jetpack/v4/connection` hit count in the access log stays flat across repeated Analytics reloads (no new requests logged). The `PATCHED` badge is bumped to `2026-07-15`.
+
+---
+
+Bump-only (WooCommerce source). Automattic's changelog lists a single fix (VAT-exempt not applied during block checkout for logged-in users, [#66342](https://github.com/woocommerce/woocommerce/pull/66342)). The 10.9.3 patch applied cleanly against 10.9.4 with zero rejects and zero fuzz/offset; the per-version patch was regenerated so it applies with no offset on a fresh extraction. The load-bearing `record_gateway_event()` fatal-fix carried forward intact — `includes/class-wc-payment-gateways.php` is unchanged from 10.9.3, so its line numbers are identical.
 
 A full clean-tree diff (10.9.3 → 10.9.4) confirmed the change is confined to non-target code: only two source files carry real changes — `includes/class-wc-customer.php` (the VAT fix — removes the `save()` no-op-change guard added in 10.9.0) and `includes/class-woocommerce.php` (version string only, not inside any hunk). The remaining diffs are the version bump (`woocommerce.php`), regenerated i18n `.pot`, and Composer/Jetpack autoload maps. No new outbound-HTTP, tracking, or telemetry targets. No review action needed beyond the bump.
 
