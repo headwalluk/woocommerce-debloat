@@ -57,9 +57,6 @@ Patches are provided per WooCommerce version. Check the `patches/` directory for
 | 10.9.1 | `patches/woocommerce-10.9.1.patch` |
 | 10.9.0 | `patches/woocommerce-10.9.0.patch` |
 | 10.8.1 | `patches/woocommerce-10.8.1.patch` |
-| 10.7.0 | `patches/woocommerce-10.7.0.patch` |
-| 10.6.2 | `patches/woocommerce-10.6.2.patch` |
-| 10.5.3 | `patches/woocommerce-10.5.3.patch` |
 | Older versions | See `patches/` directory |
 
 Patches are maintained on a best-effort basis, typically updated within a few days of a new WooCommerce release.
@@ -108,7 +105,7 @@ Even with usage tracking disabled in the WooCommerce settings, tracking infrastr
 
 The patches in this repository are the result of working through the WooCommerce source to identify and remove that behaviour, while preserving everything that legitimate ecommerce operations depend on.
 
-A detailed write-up of the investigation is available at [headwall-hosting.com](https://headwall-hosting.com/a-web-guys-blog/) *(coming soon)*.
+A detailed write-up of the investigation is available at [headwall-hosting.com](https://headwall-hosting.com/blog/woocommerce-debloat-guide/).
 
 ---
 
