@@ -4,7 +4,7 @@
 
 WooCommerce ships with a substantial amount of code that serves Automattic's interests rather than yours: admin-area tracking that runs even when usage tracking is disabled, outbound HTTP calls to WooCommerce.com on every page load, a remote product installation endpoint that lets Automattic push plugins to your site, and marketplace recommendation systems that prioritise their own commercial partners.
 
-This project provides surgical patches to remove that behaviour — without breaking anything you actually need. Plugin update checking, subscription management, and all core ecommerce functionality remain fully intact.
+This project provides surgical patches to remove that behaviour. Nothing you actually need gets broken. Plugin update checking, subscription management, and all core ecommerce functionality remain fully intact.
 
 **Important**: This is NOT an attempt to nullify commercial plugins or extensions. I created this patch to improve my clients' WooCommerce admin area performance and to stop unnecessary data being sent to third parties without meaningful consent. If you're looking for something that lets you use commercial WooCommerce extensions without paying, you're looking in the wrong place.
 
@@ -99,7 +99,7 @@ To verify the patch is working as expected, you can check that:
 
 ## Background
 
-This project started from a real incident: a WooCommerce site with moderate traffic and multiple staff using the admin area simultaneously was grinding to a halt. PHP-FPM workers were exhausted, and frontend response times had climbed to 1–5 seconds. The culprit wasn't server capacity — it was WooCommerce making outbound HTTP calls to Automattic's servers on every admin page load and AJAX heartbeat.
+This project started from a real incident: a WooCommerce site with moderate traffic and multiple staff using the admin area simultaneously was grinding to a halt. PHP-FPM workers were exhausted, and frontend response times had climbed to 1–5 seconds. The culprit wasn't server capacity. It was WooCommerce making outbound HTTP calls to Automattic's servers on every admin page load and AJAX heartbeat.
 
 Even with usage tracking disabled in the WooCommerce settings, tracking infrastructure continued to load. The admin area telemetry, the marketplace recommendation fetcher, and the remote site connector all ran regardless of the toggle in the UI.
 
@@ -111,10 +111,10 @@ A detailed write-up of the investigation is available at [headwall-hosting.com](
 
 ## Contributing
 
-Found something that should be patched? Open an issue with the file, line number, and what it does. PRs welcome — please include the WooCommerce version and a brief explanation of what the change removes and why it's safe.
+Found something that should be patched? Open an issue with the file, line number, and what it does. PRs welcome. Please include the WooCommerce version and a brief explanation of what the change removes and why it's safe.
 
 ---
 
 ## Licence
 
-GPL v2 — the same licence as WooCommerce itself.
+GPL v2, the same licence as WooCommerce itself.
