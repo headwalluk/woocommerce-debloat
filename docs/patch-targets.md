@@ -2,7 +2,7 @@
 
 Research notes on what we patch, why, and what we might patch in the future.
 
-Last updated: 2026-03-30
+Last updated: 2026-08-04
 
 ---
 
@@ -50,8 +50,18 @@ Last updated: 2026-03-30
 |------|--------|-------|-----|
 | `includes/class-woocommerce.php` | `init_jetpack_connection_config` hook | Comment out | Prevents Jetpack connection configuration from initialising |
 | `vendor/automattic/jetpack-connection/src/class-plugin.php` | `Users_Connection_Admin` instantiation | Comment out | Prevents Jetpack user connection admin UI from loading |
-| `src/Internal/Admin/Settings.php` | Jetpack status preload | Comment out | Prevents wasted internal REST call to unregistered `/jetpack/v4/connection` route |
-| `src/Internal/Admin/Loader.php` | Jetpack status preload | Comment out | Same as above, in the admin loader path |
+| `src/Internal/Admin/WCAdminAssets.php` | `enqueue_assets()` | `wp-api-fetch` middleware injected | Short-circuits the wc-admin `isJetpackConnected` resolver's `apiFetch( '/jetpack/v4/connection' )` in the browser, returning a static "not connected" object. The route is unregistered by the hunks above, so the call would otherwise 404 on every wc-admin page load and boot the full WP stack to answer it. Only that exact path is intercepted; everything else falls through to `next()` |
+
+**Retired in WC 11.0.0:** `src/Internal/Admin/Settings.php` and `src/Internal/Admin/Loader.php` each carried a hunk commenting out the `$preload_data_endpoints['jetpackStatus'] = '/jetpack/v4/connection'` server-side preload. 11.0.0 removed that preload upstream in favour of a direct in-process `REST_Connector::connection_status( false )` call, which reads local options only. The target no longer exists, so both hunks were dropped from the 11.0.0 patch. They remain in the ≤10.9.4 patches.
+
+### Feature Rollouts & Cohorts
+
+WooCommerce stages some feature and recommendation rollouts to a percentage of stores using a locally-assigned random bucket, with no merchant action or notice.
+
+| File | Target | Patch | Why |
+|------|--------|-------|-----|
+| `src/Internal/VariationGallery/Package.php` | `is_in_canary_cohort()` | Early return `false` | WC 11.0.0 made the `variation_gallery` feature's `enabled_by_default` a call to this method, silently switching the product gallery UI on for buckets 1–6 of 120 (~5% of stores) on upgrade. Patched here rather than in `is_enabled()` so an explicit `yes` on `wc_feature_woocommerce_additional_variation_images_enabled` still wins — merchant opt-in is preserved, only auto-enrolment is removed |
+| `includes/class-woocommerce.php` | `woocommerce_remote_variant_assignment` option | Force to `0` | See Options Enforcement below |
 
 ### Options Enforcement
 
@@ -66,6 +76,12 @@ Forced to `'no'` on every load in `includes/class-woocommerce.php` `init_hooks()
 | `woocommerce_feature_blueprint_enabled` | Bulk import/export — attack surface with no clear benefit for most stores |
 | `woocommerce_feature_point_of_sale_enabled` | POS feature — unnecessary overhead for most stores |
 | `woocommerce_feature_reactify-classic-payments-settings_enabled` | New payments settings UI — forced on by update functions |
+
+Forced to `0` in the same block (separate from the loop above, whose `FILTER_VALIDATE_BOOLEAN` guard would read a value like `"42"` as false and skip it):
+
+| Option | Why |
+|--------|-----|
+| `woocommerce_remote_variant_assignment` | Sticky random 1–120 bucket assigned by `add_woocommerce_remote_variant()` (hooked to `woocommerce_installed` **and** `woocommerce_updated`). Remote Spec Engines test it with a numeric `range` rule to target a percentage of stores. Despite the name the value is *not* fetched remotely — it is a local `wp_rand( 1, 120 )`; what is remote is the spec that tests it. `0` sits below every range core defines, so the store matches no cohort: the variation gallery canary (1–6), the MailPoet/Klaviyo recommendation split (1–84 / 85–120) and the TikTok/Pinterest split (1–60 / 61–120) all stop matching. The guard writes when the option is **absent** as well as non-zero — `add_woocommerce_remote_variant()` only rolls when `get_option()` returns `false`, so storing `'0'` pre-empts the roll instead of letting every update re-roll it |
 
 ### Visual Indicator
 
@@ -85,13 +101,11 @@ Forced to `'no'` on every load in `includes/class-woocommerce.php` `init_hooks()
 
 Targets identified during analysis that are not yet patched, either because they need more investigation or the fix is non-trivial.
 
-### Jetpack connection REST call (browser-initiated)
+### ~~Jetpack connection REST call (browser-initiated)~~ — RESOLVED in 10.9.4
 
-- **Symptom:** `GET /wp-json/jetpack/v4/connection?_locale=user` returns 404 on every WC admin page load
-- **What we've done:** Commented out the PHP-side `rest_preload_api_request` calls in `Settings.php` and `Loader.php`. This eliminated the server-side preload, but a client-side JS call persists.
-- **Likely source:** A bundled JS file in `vendor/automattic/jetpack-connection/dist/` (minified). The dist files `jetpack-connection.js` and `identity-crisis.js` both reference the endpoint.
-- **Why not patched yet:** Patching minified JS bundles is fragile and version-sensitive. Needs further investigation to find a cleaner server-side intercept.
-- **Impact:** One wasted REST round-trip per admin page load (404 response). Low priority but not zero cost.
+Kept for the correction. The original note guessed the caller was one of the minified bundles in `vendor/automattic/jetpack-connection/dist/` and concluded patching it would be too fragile. That diagnosis was **wrong**: the caller is wc-admin's own `isJetpackConnected` resolver, which builds the path from a `"/jetpack/v4"` constant (so the literal string never appears in the bundle, which is why grepping for it found only the vendor dist files). The fix was a `wp-api-fetch` middleware rather than any JS patching — see the `WCAdminAssets.php` row under Jetpack Connection above. Re-verified against 11.0.0: the resolver is unchanged and the interceptor is still required.
+
+**Remaining gap:** the `getJetpackConnectionData` resolver fetches `/jetpack/v4/connection/data`, which the interceptor's `connection$` anchor deliberately does not match. Pre-existing, not a regression, and only fires on surfaces that select that data. Widen the regex if it shows up in access logs.
 
 ### WC_Admin_Addons (Addons page fetches)
 

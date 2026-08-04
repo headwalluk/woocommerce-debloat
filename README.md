@@ -37,6 +37,10 @@ Each patch targets a specific version of WooCommerce. The changes are conservati
   - `woocommerce_feature_remote_logging_enabled`
   - `woocommerce_feature_blueprint_enabled`
   - `woocommerce_feature_point_of_sale_enabled`
+- Force-sets `woocommerce_remote_variant_assignment` to `0`. This is the sticky random 1–120 bucket WooCommerce assigns at install, which its Remote Spec Engines test against to roll features and plugin recommendations out to a percentage of stores without asking. `0` matches no cohort, so your store is opted out of these staged rollouts
+
+**Silent feature rollouts**
+- Disables the variation gallery canary cohort (WC 11.0.0+), which would otherwise switch the product gallery UI on for ~5% of stores on upgrade with no merchant action. An explicit opt-in via Settings → Advanced → Features still works
 
 **What the patch deliberately leaves alone**
 - WooCommerce.com subscription checking and licence validation
@@ -52,6 +56,7 @@ Patches are provided per WooCommerce version. Check the `patches/` directory for
 
 | WooCommerce | Patch file |
 |---|---|
+| 11.0.0 | `patches/woocommerce-11.0.0.patch` |
 | 10.9.4 | `patches/woocommerce-10.9.4.patch` |
 | 10.9.3 | `patches/woocommerce-10.9.3.patch` |
 | 10.9.1 | `patches/woocommerce-10.9.1.patch` |
