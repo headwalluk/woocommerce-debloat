@@ -308,8 +308,8 @@ diff -ruN woocommerce-11.0.0/src/Internal/Admin/Settings/PaymentsProviders.php w
  
 diff -ruN woocommerce-11.0.0/src/Internal/Admin/WCAdminAssets.php woocommerce-11.0.0-patched/src/Internal/Admin/WCAdminAssets.php
 --- woocommerce-11.0.0/src/Internal/Admin/WCAdminAssets.php	2026-07-13 17:35:30.000000000 +0100
-+++ woocommerce-11.0.0-patched/src/Internal/Admin/WCAdminAssets.php	2026-08-04 17:41:53.920114985 +0100
-@@ -247,6 +247,30 @@
++++ woocommerce-11.0.0-patched/src/Internal/Admin/WCAdminAssets.php	2026-08-10 20:30:16.495722583 +0100
+@@ -247,6 +247,59 @@
  		wp_enqueue_script( WC_ADMIN_APP );
  		wp_enqueue_style( WC_ADMIN_APP );
  
@@ -337,8 +337,38 @@ diff -ruN woocommerce-11.0.0/src/Internal/Admin/WCAdminAssets.php woocommerce-11
 +			wp_add_inline_script( 'wp-api-fetch', $wc_debloat_jetpack_js, 'after' );
 +		}
 +
++		// DEBLOAT: suppress the two Marketplace upsell surfaces on the Extensions screen.
++		//   - .woocommerce-marketplace__banner: a four-slide rotating carousel above the page.
++		//   - .woocommerce-marketplace__footer: the same four messages again at the bottom,
++		//     under "Hundreds of vetted products and services. Unlimited potential."
++		// Both are "30-day money-back guarantee" / "Get help when you need it" / "Products you
++		// can trust" / "Support the ecosystem", linking out to woocommerce.com and firing
++		// marketplace_*_link_click Tracks events. Both are hardcoded in the compiled app bundle:
++		// no remote fetch, no PHP hook, no filter, and no code path by which a store notice or
++		// admin alert can ever appear in either. Notices and store alerts render in a separate
++		// subtree, so nothing operational is lost by removing them.
++		// There is no server-side hook to unhook, so this is done on the client. Each class has
++		// exactly one use in the bundle and one rule block in the stylesheet, so the CSS cannot
++		// catch anything else. The banner additionally gets its own dismissal flag seeded, so it
++		// returns null and emits no DOM rather than merely being hidden -- the CSS covers the
++		// flash before that effect runs. That flag is the same one the built-in dismiss button
++		// sets, so it is equivalent to the merchant having clicked the X, and it persists in the
++		// browser: if this patch is later removed, clear localStorage key
++		// wc_featuredBannerDismissed to bring the banner back.
++		$wc_debloat_banner_js = <<<'JS'
++( function () {
++	try { window.localStorage.setItem( 'wc_featuredBannerDismissed', 'true' ); } catch ( e ) {}
++} )();
++JS;
++		wp_add_inline_script( WC_ADMIN_APP, $wc_debloat_banner_js, 'before' );
++		wp_add_inline_style(
++			WC_ADMIN_APP,
++			'.woocommerce-marketplace__banner,.woocommerce-marketplace__footer{display:none!important;}'
++		);
++
  		wp_enqueue_style( 'wc-material-icons' );
  		wp_enqueue_style( 'wc-onboarding' );
+ 
  
 diff -ruN woocommerce-11.0.0/src/Internal/VariationGallery/Package.php woocommerce-11.0.0-patched/src/Internal/VariationGallery/Package.php
 --- woocommerce-11.0.0/src/Internal/VariationGallery/Package.php	2026-07-13 17:35:30.000000000 +0100
@@ -384,7 +414,7 @@ diff -ruN woocommerce-11.0.0/woocommerce.php woocommerce-11.0.0-patched/woocomme
 +	'plugin_row_meta',
 +	function ( $links, $file ) {
 +		if ( $file == 'woocommerce/woocommerce.php' ) {
-+			$links['wpatcher'] = '<span style="background-color: purple; color: white; padding:0.2em 0.5em; font-weight: 700; border-radius: 0.3em">PATCHED : 2026-08-04</span>';
++			$links['wpatcher'] = '<span style="background-color: purple; color: white; padding:0.2em 0.5em; font-weight: 700; border-radius: 0.3em">PATCHED : 2026-08-10</span>';
 +		}
 +
 +		return $links;

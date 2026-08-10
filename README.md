@@ -24,6 +24,7 @@ Each patch targets a specific version of WooCommerce. The changes are conservati
 - Disables marketplace suggestions and payment provider recommendations
 - Removes payment extension suggestions from the Payments settings page
 - Comments out the marketplace updater and promotions includes
+- Hides the two woocommerce.com upsell surfaces on the Extensions screen: the rotating "Marketplace features" carousel at the top, and the marketplace footer repeating the same four messages at the bottom. Both are hardcoded adverts — money-back guarantee, support, product quality, ecosystem. No store notice or admin alert can appear in either
 
 **WooCommerce.com remote access**
 - Disables `WC_WCCOM_Site::load()`, which registers REST endpoints that allow Automattic to remotely install plugins on your site and hooks into `determine_current_user` on every request
