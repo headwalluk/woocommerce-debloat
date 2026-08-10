@@ -308,8 +308,8 @@ diff -ruN woocommerce-11.0.0/src/Internal/Admin/Settings/PaymentsProviders.php w
  
 diff -ruN woocommerce-11.0.0/src/Internal/Admin/WCAdminAssets.php woocommerce-11.0.0-patched/src/Internal/Admin/WCAdminAssets.php
 --- woocommerce-11.0.0/src/Internal/Admin/WCAdminAssets.php	2026-07-13 17:35:30.000000000 +0100
-+++ woocommerce-11.0.0-patched/src/Internal/Admin/WCAdminAssets.php	2026-08-10 20:30:16.495722583 +0100
-@@ -247,6 +247,59 @@
++++ woocommerce-11.0.0-patched/src/Internal/Admin/WCAdminAssets.php	2026-08-10 20:46:26.818955335 +0100
+@@ -247,6 +247,65 @@
  		wp_enqueue_script( WC_ADMIN_APP );
  		wp_enqueue_style( WC_ADMIN_APP );
  
@@ -322,7 +322,7 @@ diff -ruN woocommerce-11.0.0/src/Internal/Admin/WCAdminAssets.php woocommerce-11
 +		// status endpoint is intercepted; any other path falls through to next() unchanged.
 +		if ( wp_script_is( 'wp-api-fetch', 'registered' ) ) {
 +			$wc_debloat_jetpack_js = <<<'JS'
-+( function ( wp ) {
++;( function ( wp ) {
 +	if ( ! wp || ! wp.apiFetch || ! wp.apiFetch.use ) { return; }
 +	wp.apiFetch.use( function ( options, next ) {
 +		var path = ( options && options.path ) || '';
@@ -355,8 +355,14 @@ diff -ruN woocommerce-11.0.0/src/Internal/Admin/WCAdminAssets.php woocommerce-11
 +		// sets, so it is equivalent to the merchant having clicked the X, and it persists in the
 +		// browser: if this patch is later removed, clear localStorage key
 +		// wc_featuredBannerDismissed to bring the banner back.
++		// The leading semicolon is load-bearing. WordPress concatenates all 'before' inline
++		// scripts for a handle with newlines, and Features.php emits
++		// "window.wcAdminFeatures = {...}" with no trailing semicolon. Without the ';' here,
++		// ASI does not break the statement -- "{...}" followed by "(" parses as a call with the
++		// object as the callee, so wcAdminFeatures is never assigned and the whole wc-admin app
++		// dies with "({...}) is not a function". Do not remove it.
 +		$wc_debloat_banner_js = <<<'JS'
-+( function () {
++;( function () {
 +	try { window.localStorage.setItem( 'wc_featuredBannerDismissed', 'true' ); } catch ( e ) {}
 +} )();
 +JS;
