@@ -32,6 +32,15 @@ guards a fatal `get_base_country() on null` (null `WC()->countries`) triggered b
 writes a payment-gateway option before `init` priority 0. Carry it forward to every WC ≥ 10.7 patch
 and verify the line numbers per version. See `docs/patch-targets.md`.
 
+**Then run the drift watchlist.** A clean apply proves a hunk still fits, not that it still does
+anything — a renamed CSS class, a rebuilt bundle or a feature gaining an `option_key` leaves a hunk
+applying perfectly and achieving nothing, and neither `patch` nor `php -l` will say a word. The
+table in `docs/patch-targets.md` lists every anchor that can go silently dead, the grep to check it
+with, and the baseline count from the last version. Run it against the **clean** extraction and
+update the baselines in that table as part of the patch. A count that moved is a finding, in either
+direction: dropping to zero means the hunk is now dead weight, rising means something new is reading
+the same thing.
+
 ## Phase 2: Search for new outbound HTTP calls
 
 Search the **clean** source directory for patterns that make outbound HTTP requests. These are the highest-value targets — they block PHP workers and leak data.

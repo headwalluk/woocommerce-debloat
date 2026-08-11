@@ -2,7 +2,7 @@
 
 Research notes on what we patch, why, and what we might patch in the future.
 
-Last updated: 2026-08-04
+Last updated: 2026-08-11
 
 ---
 
@@ -36,6 +36,7 @@ Last updated: 2026-08-04
 | `src/Admin/RemoteInboxNotifications/RemoteInboxNotificationsDataSourcePoller.php` | `get_data_sources()` | Early return `[]` | Blocks promotional inbox notification fetches (daily cron) from `woocommerce.com` |
 | `src/Internal/Admin/Settings/Payments.php` | `get_extension_suggestions` call | Comment out | Prevents extension suggestions appearing on Payments settings page |
 | `src/Internal/Admin/Settings/PaymentsProviders.php` | `get_extension_suggestions()` | Early return empty structure | Prevents extension suggestion lookups |
+| `src/Internal/Admin/WCAdminAssets.php` | `enqueue_assets()` | Inline style + inline script injected | Suppresses the two Marketplace upsell surfaces on the Extensions screen: `.woocommerce-marketplace__banner` (4-slide woocommerce.com carousel, top) and `.woocommerce-marketplace__footer` (same 4 messages, bottom). Both are hardcoded in the compiled `assets/client/admin/app/index.js` with no PHP hook or filter to unhook, and the bundle is a single 248 KB minified line so it cannot be diffed. The script seeds `localStorage.wc_featuredBannerDismissed = 'true'` — the carousel's own dismiss flag — so it renders `null` and emits no DOM; the CSS only covers the flash before that effect runs, and is the sole surviving exception to the no-CSS-masking rule. Note the flag outlives the patch: clear that localStorage key to restore the carousel. **Both inline snippets must keep their leading `;`** — see the drift watchlist |
 
 ### WooCommerce.com Remote Access
 
@@ -62,6 +63,9 @@ WooCommerce stages some feature and recommendation rollouts to a percentage of s
 |------|--------|-------|-----|
 | `src/Internal/VariationGallery/Package.php` | `is_in_canary_cohort()` | Early return `false` | WC 11.0.0 made the `variation_gallery` feature's `enabled_by_default` a call to this method, silently switching the product gallery UI on for buckets 1–6 of 120 (~5% of stores) on upgrade. Patched here rather than in `is_enabled()` so an explicit `yes` on `wc_feature_woocommerce_additional_variation_images_enabled` still wins — merchant opt-in is preserved, only auto-enrolment is removed |
 | `includes/class-woocommerce.php` | `woocommerce_remote_variant_assignment` option | Force to `0` | See Options Enforcement below |
+| `src/Admin/API/Options.php` | `get_options()` | Blank `woocommerce_remote_variant_assignment` in the response | Stops the wc-admin client ever seeing the rollout bucket. Added in the 11.0.1 revision to kill the order attribution install banner on Analytics → Overview (`.woocommerce-order-attribution-install-banner`, "Discover what drives your sales" / **Try it now**), an upsell for the `woocommerce-analytics` plugin that also fires `order_attribution_install_banner_viewed` / `_clicked` / `_dismissed` Tracks events. **Our own `0` is what switched it on** — see the trap below. Returning `false` reaches the client as `NaN` through `parseInt()`, which fails an upper-bound and a lower-bound test alike, so no present or future client-side cohort check can match. The stored value is untouched, so `is_in_canary_cohort()` and the Remote Spec rules still see `0`. Blanked inside the loop rather than dropped from `$legacy_whitelisted_options`, because `get_item_permissions_check()` rejects the **whole** request if any single requested option is unpermitted, which would 403 every batch that includes it |
+
+**The cohort-sentinel trap — read this before adding any similar hunk.** Every server-side `range` rule is bounded at both ends (`ComparisonOperation.php`: `$left >= $right[0] && $left <= $right[1]`), which is why `0` is the correct sentinel for PHP. The wc-admin client is not so careful. The order attribution banner's check is `parseInt( value ) <= threshold`, **upper bound only**, threshold 12 by default, so `0` read as in-cohort and the banner appeared on patched stores that would otherwise have seen it 10% of the time. **A sentinel chosen to sit below every server-side range will pass any client-side check that tests only an upper bound.** When auditing a cohort-gated surface, check both bound directions, and prefer making the value non-numeric at the client boundary over picking a different number — a different number only moves the problem to the other bound.
 
 ### Options Enforcement
 
@@ -96,6 +100,27 @@ Forced to `0` in the same block (separate from the loop above, whose `FILTER_VAL
 | `src/Blocks/DependencyDetection.php` | Comment referencing webpack path | Updated | Removes reference to `client/blocks/bin/webpack-helpers.js` that doesn't exist in release builds |
 
 ---
+
+## Drift Watchlist
+
+A clean apply proves a hunk still *fits*. It does not prove the hunk still *does* anything. These are the targets that can go silently dead on a WooCommerce upgrade, with the anchor to check and the baseline count as of clean 11.0.1. Nothing in `patch`, `php -l` or the apply log will flag any of them.
+
+Run from the **clean** extraction, not the patched one.
+
+| Anchor | Check | 11.0.1 baseline | Fails silently if |
+|--------|-------|-----------------|-------------------|
+| `.woocommerce-marketplace__banner` | `grep -o` in `assets/client/admin/app/index.js` | 3 (plus 9 in `app/style.css`) | Class renamed in a rebuilt bundle. CSS hides nothing, carousel returns |
+| `.woocommerce-marketplace__footer` | same | 4 (plus 7 in `app/style.css`) | As above |
+| `wc_featuredBannerDismissed` | same | 2 | Dismissal flag renamed or moved off `localStorage`. Banner then relies on the CSS alone, so it still emits DOM |
+| `isJetpackConnected` | same | 3 | Resolver renamed. **Grepping for the literal `jetpack/v4/connection` is a false negative** — the resolver builds the path from a `"/jetpack/v4"` constant, so the literal never appears in the bundle |
+| `woocommerce_remote_variant_assignment` | `grep -o` in `app/index.js` **and** `embed/index.js` | 1 + 1 | A second client-side consumer appears (count rises), or the banner moves to a different gate (count drops to 0, making the `Options.php` hunk dead weight) |
+| `order_attribution_install_banner_dismissed` | same | 2 + 2 | Banner reworked. Re-check which bound its cohort test uses |
+| `case 'range'` in `RemoteSpecs/RuleProcessors/ComparisonOperation.php` | Confirm it is still `>= $right[0] && <= $right[1]` | both-bounded | Upstream adds a one-sided operator. `0` would then start *matching* cohorts instead of avoiding them |
+| `record_gateway_event()` in `includes/class-wc-payment-gateways.php` | Method still exists, signature unchanged | 1 | **Load-bearing.** This one also guards a fatal, so losing it is worse than losing a telemetry strip |
+| `createStatsdURL` in `assets/js/frontend/a8c-address-autocomplete-service.js` | `grep -c` | 2 | File rebuilt or renamed. It is a shipped JS asset, so it churns more than the PHP |
+| `is_in_canary_cohort()` in `src/Internal/VariationGallery/Package.php` | Method still exists and is still referenced by `enabled_by_default` | 2 | Cohort logic inlined or moved. Auto-enrolment returns |
+| Forced feature options | Each slug still in `FeaturesController::get_feature_definitions()` **without** an `option_key` override | `remote_logging`, `blueprint`, `point_of_sale` all present, none overridden | A feature gaining an `option_key` orphans our forced `woocommerce_feature_<slug>_enabled` write. Note the literal option name does **not** appear in source — it is built by `sprintf( 'woocommerce_feature_%s_enabled', $slug )` at `FeaturesController.php:706`, so grepping for the full option name returns 0 hits and proves nothing |
+| Leading `;` on both `WCAdminAssets.php` inline scripts | Read the hunk | present | Not drift, but the highest-consequence regression in the set. `Features.php` emits `window.wcAdminFeatures = {…}` with no trailing semicolon, so ASI does not break the statement and the next `(` parses as a call on the object. This has taken the whole Extensions screen down once |
 
 ## Future Candidates
 
