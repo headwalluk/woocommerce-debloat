@@ -13,7 +13,7 @@ When a new WooCommerce version is released, a new patch file is created by adapt
 3. Add new patch targets if Automattic has introduced new tracking mechanisms
 4. Verify the patch applies cleanly against the new WooCommerce version
 
-Patches use unified diff format with `a/` and `b/` prefixes (git-style). Paths inside the patch are relative to the `woocommerce/` plugin directory (applied with `--directory=woocommerce`).
+Patches use plain unified diff format, generated with `diff -ruN woocommerce-X.Y.Z woocommerce-X.Y.Z-patched` from inside `work/`. There are **no** git-style `a/` and `b/` prefixes: the header paths are the two directory names, so `-p1` strips the leading `woocommerce-X.Y.Z/` component and the rest is relative to the plugin directory (applied with `patch -p1 --directory=woocommerce`).
 
 ## Patch Style Conventions
 
@@ -22,6 +22,29 @@ Patches use unified diff format with `a/` and `b/` prefixes (git-style). Paths i
 - Add inline comments explaining why each change is made
 - Keep patches conservative and minimal — only disable what is necessary
 - The "PATCHED" badge block should be updated with the current date for each new patch
+
+### No CSS masking
+
+Remove things properly or leave them alone. A `display: none` rule is tape over a warning light: the
+code still runs, still fetches, still fires its tracking events, and the next release can move the
+class out from under the rule with nothing to tell us. Work down this order and stop at the first one
+that works:
+
+1. **Unhook it server-side.** Comment out the hook, early-return the method, force the option.
+2. **Make the component render nothing.** Seed the flag it already checks, or cut off the data it
+   gates on, so it returns `null` and emits no DOM. The `Options.php` hunk is the model: blanking one
+   value in a REST response stops the banner mounting at all.
+3. **CSS, and only with a written reason.** Say in the changelog why the two options above were not
+   available.
+
+The `.woocommerce-marketplace__footer` rule is the sole surviving exception, kept by explicit
+decision. Do not treat it as precedent.
+
+### State the removal tier in the changelog
+
+Each new target should say which of the three tiers above it lands in. It is the difference between
+a fix that survives an upgrade and one that quietly stops working, and it is the first thing worth
+knowing when a surface comes back.
 
 ## Analysis Workflow
 
