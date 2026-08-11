@@ -197,6 +197,45 @@ diff -ruN woocommerce-11.0.1/includes/wccom-site/class-wc-wccom-site.php woocomm
  		self::includes();
  
  		add_action( 'woocommerce_wccom_install_products', array( 'WC_WCCOM_Site_Installer', 'install' ) );
+diff -ruN woocommerce-11.0.1/src/Admin/API/Options.php woocommerce-11.0.1-patched/src/Admin/API/Options.php
+--- woocommerce-11.0.1/src/Admin/API/Options.php	2026-07-13 17:35:30.000000000 +0100
++++ woocommerce-11.0.1-patched/src/Admin/API/Options.php	2026-08-11 06:52:52.139643193 +0100
+@@ -267,6 +267,35 @@
+ 
+ 		$params = explode( ',', $request['options'] );
+ 		foreach ( $params as $option ) {
++			// wpatcher: never hand the remote cohort bucket to the browser.
++			//
++			// woocommerce_remote_variant_assignment is a sticky random 1-120 bucket used to roll
++			// features and plugin upsells out to a percentage of stores. class-woocommerce.php
++			// forces it to 0 so this store sits below every server-side 'range' rule, which are
++			// all bounded at both ends ( >= min && <= max ).
++			//
++			// The wc-admin client is not so careful. The order attribution install banner tests
++			// the upper bound only -- parseInt( value ) <= threshold, threshold 12 by default --
++			// so 0 reads as "in the cohort" and the banner shows on Analytics > Overview,
++			// upselling the woocommerce-analytics plugin and firing three Tracks events. Our own
++			// 0 is what puts the store in that bucket; an unpatched store rolls 13-120 90% of the
++			// time and never sees it.
++			//
++			// Returning false rather than a different number fixes it in both directions: the
++			// client's parseInt() yields NaN, which fails an upper-bound test and a lower-bound
++			// one alike, so no present or future client-side cohort check can match. This is the
++			// only client-side consumer of the option in either admin bundle (app and embed), and
++			// nothing in the browser has a legitimate use for a server-side rollout bucket.
++			//
++			// Blanking it here rather than dropping it from the allowlist above is deliberate:
++			// get_item_permissions_check() rejects the whole request if any requested option is
++			// not permitted, so removing it would 403 every batch that asks for it alongside
++			// options the client does need. The server-side value is untouched.
++			if ( 'woocommerce_remote_variant_assignment' === $option ) {
++				$options[ $option ] = false;
++				continue;
++			}
++
+ 			$options[ $option ] = get_option( $option );
+ 		}
+ 
 diff -ruN woocommerce-11.0.1/src/Admin/Features/MarketingRecommendations/MarketingRecommendationsDataSourcePoller.php woocommerce-11.0.1-patched/src/Admin/Features/MarketingRecommendations/MarketingRecommendationsDataSourcePoller.php
 --- woocommerce-11.0.1/src/Admin/Features/MarketingRecommendations/MarketingRecommendationsDataSourcePoller.php	2024-11-13 20:17:00.000000000 +0000
 +++ woocommerce-11.0.1-patched/src/Admin/Features/MarketingRecommendations/MarketingRecommendationsDataSourcePoller.php	2026-08-11 05:58:08.807271291 +0100
