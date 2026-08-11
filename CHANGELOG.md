@@ -4,6 +4,20 @@ All notable changes to the patch set are documented here, grouped by WooCommerce
 
 ---
 
+## 11.0.1 — 2026-08-11
+
+Bump-only. 11.0.1 is a security and maintenance point release shipped six days after 11.0.0. The 11.0.0 patch applied cleanly against it with zero rejects, and the per-version patch was regenerated so it applies with no offset on a fresh extraction. All 185 changed lines are byte-identical to the 11.0.0 patch apart from the `PATCHED` badge, which is bumped to `2026-08-11`. The file count stays at 22.
+
+**Only two patched files were touched upstream, and neither collides.** `woocommerce.php` changed the version string only, well clear of the badge block appended at the end. `includes/class-woocommerce.php` took three changes: the version string, a new `OrderLogsCleanupHelper` container registration, and the fix behind "Fixed admin settings initialization" ([#67532](https://github.com/woocommerce/woocommerce/pull/67532)) — `register_wp_admin_settings()` is now hooked to `admin_init` as well as `rest_api_init`, with a re-entrancy guard inside the method. That landed a few lines below our `WC_Site_Tracking` hunk and shifted our five hunks by 1 to 13 lines, but no hunk overlaps it. Both files were re-checked after applying: the upstream additions and our changes are all present in the patched tree.
+
+**Analysis — no new phone-home targets.** Full-tree pattern counts are identical between clean 11.0.0 and clean 11.0.1: `wp_remote_*` (47 files), `pixel.wp.com` (3), `tracking.woocommerce.com` (1), `public-api.wordpress.com` (10), `WC_Tracks::` (22), `DataSourcePoller` (20). None of the changed files adds an outbound call, a Tracks event, or an Automattic endpoint. The changelog is mostly hardening: authorization checks on the Marketplace subscription activate endpoint and the review-order shortcode, Store API cart-token resolution, session cookie hashing, and Analytics argument validation. The marketplace fix is in `includes/admin/helper/class-wc-helper-subscriptions-api.php`, which we do not patch; `class-wc-helper.php`, which we do, is unchanged from 11.0.0.
+
+**Noted, not actioned — per-order place-order debug logging.** `wc_log_order_step()` (`includes/wc-order-step-logger-functions.php`) writes a DEBUG log entry with a `debug_backtrace()` for each checkout step, stamps `_debug_log_source` meta on the order, and on a clean run schedules the file for deletion. It has been there since 9.9.0, and it is on by default: the logging `level_threshold` default is `none`, which `WC_Log_Levels::get_level_severity()` maps to severity `0`, so `should_handle()` passes every level including DEBUG. 11.0.1 adds a supported off switch, `woocommerce_order_step_logging_enabled` (default `true`), and bounds the cleanup so the daily job reschedules until the backlog drains instead of stopping at 100 files ([#67410](https://github.com/woocommerce/woocommerce/pull/67410)). This is local disk churn on the checkout critical path, not telemetry, so it sits outside what this patch set targets and is left alone. Worth revisiting as a one-line `add_filter( 'woocommerce_order_step_logging_enabled', '__return_false' )` if log volume becomes a problem on a busy store.
+
+Verified with a dry-run against a pristine 11.0.1 extraction: zero rejects, zero fuzz, zero offset, and `php -l` clean across all 21 patched PHP files. Both inline-script blocks in `WCAdminAssets.php` still carry the load-bearing leading `;`. Not yet validated on a live site.
+
+---
+
 ## 11.0.0 — 2026-08-04
 
 **Revised 2026-08-10** to add one new target (below). The WooCommerce-source analysis in the following paragraphs is unchanged.
