@@ -2,7 +2,7 @@
 
 Research notes on what we patch, why, and what we might patch in the future.
 
-Last updated: 2026-08-11
+Last updated: 2026-09-03
 
 ---
 
@@ -20,6 +20,7 @@ Last updated: 2026-08-11
 | `includes/react-admin/class-experimental-abtest.php` | `request_assignment()` | Early return empty variations | Blocks A/B test assignment calls to `public-api.wordpress.com` |
 | `assets/js/frontend/a8c-address-autocomplete-service.js` | `createStatsdURL()` | Early return `''` | Blocks frontend tracking pixel to `pixel.wp.com/boom.gif` on checkout |
 | `includes/class-wc-payment-gateways.php` | `record_gateway_event()` | Early return | Suppresses gateway enable/disable Tracks event **and** fixes a fatal `get_base_country() on null` when a plugin writes a gateway option before `init` priority 0 (e.g. PPCP migration at prio -1) |
+| `includes/class-woocommerce.php` | `LegacySelect2UsageTracker::register()` | Comment out | **Tier 1.** New in 11.1.0. Fingerprints which plugins still enqueue the legacy `select2` / `wc-select2` handles — the handles, their dependents, and the **plugin-relative path of every dependent script** — as a weekly-throttled `legacy_select2_usage_detected` event, i.e. an inventory of installed plugins. The admin path is gated on `WC_Site_Tracking::is_tracking_enabled()` which we already sever, but the **frontend path hooks `wp_print_footer_scripts` unconditionally** and routes through `WC_Analytics_Tracking::add_event_to_queue()` (the separate `woocommerce-analytics` plugin), outside our master switch. Unhooking the registration kills both paths |
 
 ### Marketplace & Upsells
 
@@ -61,7 +62,8 @@ WooCommerce stages some feature and recommendation rollouts to a percentage of s
 
 | File | Target | Patch | Why |
 |------|--------|-------|-----|
-| `src/Internal/VariationGallery/Package.php` | `is_in_canary_cohort()` | Early return `false` | WC 11.0.0 made the `variation_gallery` feature's `enabled_by_default` a call to this method, silently switching the product gallery UI on for buckets 1–6 of 120 (~5% of stores) on upgrade. Patched here rather than in `is_enabled()` so an explicit `yes` on `wc_feature_woocommerce_additional_variation_images_enabled` still wins — merchant opt-in is preserved, only auto-enrolment is removed |
+| `src/Internal/VariationGallery/Package.php` | `is_enabled()` | Rewritten to `return 'yes' === get_option( self::ENABLE_OPTION_NAME, '' )` | **Tier 1.** WC 11.1.0 hardcoded this to `return true` and set the feature to `enabled_by_default => true`, `disable_ui => true`, `deprecated_since => '11.1.0'`, `deprecated_value => true`. `FeaturesController::feature_is_enabled()` returns `deprecated_value` before it reads the option, so no option, filter or Settings toggle can hold the gallery back any more. This restores the 10.9.x/11.0.x contract: an explicit `yes` opts in, anything else stays off. **Retires at 11.2 by standing decision** — 11.1.0 is the last release that holds it back |
+| `src/Internal/VariationGallery/Package.php` | `init()` | Restore `if ( ! self::is_enabled() ) { return; }` guard | **Tier 1.** 11.1.0 deleted this guard when the feature went to 100%. Without it the `is_enabled()` hunk above achieves nothing operationally: the admin hooks still register and `maybe_schedule_migration()` still queues the Additional Variation Images data migration. **The two hunks are a pair — neither works alone.** Retires at 11.2 alongside its partner |
 | `includes/class-woocommerce.php` | `woocommerce_remote_variant_assignment` option | Force to `0` | See Options Enforcement below |
 | `src/Admin/API/Options.php` | `get_options()` | Blank `woocommerce_remote_variant_assignment` in the response | Stops the wc-admin client ever seeing the rollout bucket. Added in the 11.0.1 revision to kill the order attribution install banner on Analytics → Overview (`.woocommerce-order-attribution-install-banner`, "Discover what drives your sales" / **Try it now**), an upsell for the `woocommerce-analytics` plugin that also fires `order_attribution_install_banner_viewed` / `_clicked` / `_dismissed` Tracks events. **Our own `0` is what switched it on** — see the trap below. Returning `false` reaches the client as `NaN` through `parseInt()`, which fails an upper-bound and a lower-bound test alike, so no present or future client-side cohort check can match. The stored value is untouched, so `is_in_canary_cohort()` and the Remote Spec rules still see `0`. Blanked inside the loop rather than dropped from `$legacy_whitelisted_options`, because `get_item_permissions_check()` rejects the **whole** request if any single requested option is unpermitted, which would 403 every batch that includes it |
 
@@ -78,14 +80,34 @@ Forced to `'no'` on every load in `includes/class-woocommerce.php` `init_hooks()
 | `woocommerce_show_marketplace_suggestions` | UI toggle for marketplace suggestions |
 | `woocommerce_feature_remote_logging_enabled` | Sends error logs to `public-api.wordpress.com/rest/v1.1/logstash` |
 | `woocommerce_feature_blueprint_enabled` | Bulk import/export — attack surface with no clear benefit for most stores |
-| `woocommerce_feature_point_of_sale_enabled` | POS feature — unnecessary overhead for most stores |
-| `woocommerce_feature_reactify-classic-payments-settings_enabled` | New payments settings UI — forced on by update functions |
+| `woocommerce_feature_point_of_sale_enabled` | ⚠️ **DEAD since 11.0.0 — no working replacement.** `point_of_sale` is `deprecated_since => '11.0.0'` with `deprecated_value => true`, so `feature_is_enabled()` returns `true` without ever reading the option. Harmless in practice: no PHP in the tree gates behaviour on the flag (the only references outside `FeaturesController` are the one-time update function that writes it and its registration), and the feature only enables POS in the WooCommerce mobile apps. Left in the list because the loop is guarded, so it costs one autoloaded `get_option()` and no write. Retiring it is a separate decision |
+| `woocommerce_feature_reactify-classic-payments-settings_enabled` | ⚠️ **DEAD as of 11.1.0 — the slug no longer exists** in `FeaturesController::get_feature_definitions()`. The only surviving reference in the tree is `wc_update_985_enable_new_payments_settings_page_feature()`, which writes it to `'yes'`; nothing reads it. The reactified payments settings UI is no longer gated on it. Same guarded-loop reasoning as the POS row above |
 
 Forced to `0` in the same block (separate from the loop above, whose `FILTER_VALIDATE_BOOLEAN` guard would read a value like `"42"` as false and skip it):
 
 | Option | Why |
 |--------|-----|
 | `woocommerce_remote_variant_assignment` | Sticky random 1–120 bucket assigned by `add_woocommerce_remote_variant()` (hooked to `woocommerce_installed` **and** `woocommerce_updated`). Remote Spec Engines test it with a numeric `range` rule to target a percentage of stores. Despite the name the value is *not* fetched remotely — it is a local `wp_rand( 1, 120 )`; what is remote is the spec that tests it. `0` sits below every range core defines, so the store matches no cohort: the variation gallery canary (1–6), the MailPoet/Klaviyo recommendation split (1–84 / 85–120) and the TikTok/Pinterest split (1–60 / 61–120) all stop matching. The guard writes when the option is **absent** as well as non-zero — `add_woocommerce_remote_variant()` only rolls when `get_option()` returns `false`, so storing `'0'` pre-empts the roll instead of letting every update re-roll it |
+
+### Feature Default Pin
+
+Added in 11.1.0, in `includes/class-woocommerce.php` `init()`, immediately after the `woocommerce_remote_variant_assignment` force. Placement matters: `init()` opens by calling `register_additional_features()`, so the feature definitions are fully populated by the time the block runs.
+
+**Tier 1.** Iterates `FeaturesController::get_features( true, false )` and, for every feature that is **not** already `enabled_by_default` and **not** `deprecated_since`, reads the option with a `'__wpatcher_absent__'` sentinel default and writes `'no'` only when the option is genuinely absent. 23 options are pinned as of 11.1.0.
+
+This is write-once materialisation of the current default, **not a force** — a merchant who later enables something keeps it. The purpose is narrow: a release that flips an `enabled_by_default` from `false` to `true` would otherwise switch that feature on for every store that never touched the toggle. Once the option exists, the new default is never consulted.
+
+| Design point | Why it is that way |
+|--------------|--------------------|
+| Names come from `FeaturesController::feature_enable_option_name()` | Several features carry an `option_key` override (`analytics`, both HPOS options, `wc-visual-attribute`, `cart_save_for_later`, `product_wishlist`, `ProductMediaGallery`, `BlockEditorUnifiedAssets`). Hand-building `woocommerce_feature_<slug>_enabled` would write orphan options nothing reads |
+| Sentinel default rather than a falsy test | `absent` must be distinguishable from an explicit `no`, or the option is rewritten on every load |
+| Skips `deprecated_since` features | They never consult their option — `feature_is_enabled()` returns `deprecated_value` first — so a write would be misleading dead weight |
+| Skips `enabled_by_default` features | On-by-default is upstream's call and is left alone. Anything we actively want off goes in the forced list above instead |
+| Precedent | Core does the same thing: `wc_update_1050_enable_autoload_options()` materialises four feature options with the same absent-check-then-write shape |
+
+**The caveat that matters.** This defends against an `enabled_by_default` flip and **nothing else**. It cannot hold back a feature upstream hardcodes on and marks deprecated, because `feature_is_enabled()` short-circuits on `deprecated_value` before reading the option. That is exactly what 11.1.0 did to the variation gallery, which is why that one needs its own hunk. When a feature comes on anyway, check *which* mechanism enabled it before assuming the pin failed.
+
+It does **not** block `WC_Install::enable_email_improvements_for_existing_merchants()`, which calls `change_feature_enable()` — an unconditional write that overrides a pinned value. Deliberate: that is a guarded migration with its own opt-out conditions, not a silent default flip.
 
 ### Visual Indicator
 
@@ -103,14 +125,16 @@ Forced to `0` in the same block (separate from the loop above, whose `FILTER_VAL
 
 ## Drift Watchlist
 
-A clean apply proves a hunk still *fits*. It does not prove the hunk still *does* anything. These are the targets that can go silently dead on a WooCommerce upgrade, with the anchor to check and the baseline count as of clean 11.0.1. Nothing in `patch`, `php -l` or the apply log will flag any of them.
+A clean apply proves a hunk still *fits*. It does not prove the hunk still *does* anything. These are the targets that can go silently dead on a WooCommerce upgrade, with the anchor to check and the baseline count as of clean 11.1.0. Nothing in `patch`, `php -l` or the apply log will flag any of them.
 
-Run from the **clean** extraction, not the patched one.
+Run from the **clean** extraction, not the patched one — and against the **final** build, not an RC: the admin bundle can be rebuilt between the two.
 
-| Anchor | Check | 11.0.1 baseline | Fails silently if |
+> **Grep the class name without a leading dot.** The compiled bundle stores these as className *strings*, so `grep -o '\.woocommerce-marketplace__banner'` returns **0** against `app/index.js` and looks exactly like the selector has died. The stylesheet does carry the dot. Every bundle baseline below is counted **without** it.
+
+| Anchor | Check | 11.1.0 baseline | Fails silently if |
 |--------|-------|-----------------|-------------------|
-| `.woocommerce-marketplace__banner` | `grep -o` in `assets/client/admin/app/index.js` | 3 (plus 9 in `app/style.css`) | Class renamed in a rebuilt bundle. CSS hides nothing, carousel returns |
-| `.woocommerce-marketplace__footer` | same | 4 (plus 7 in `app/style.css`) | As above |
+| `woocommerce-marketplace__banner` | `grep -o` in `assets/client/admin/app/index.js` (no leading dot) | 3 (plus 9 in `app/style.css`) | Class renamed in a rebuilt bundle. CSS hides nothing, carousel returns |
+| `woocommerce-marketplace__footer` | same | 4 (plus 7 in `app/style.css`) | As above |
 | `wc_featuredBannerDismissed` | same | 2 | Dismissal flag renamed or moved off `localStorage`. Banner then relies on the CSS alone, so it still emits DOM |
 | `isJetpackConnected` | same | 3 | Resolver renamed. **Grepping for the literal `jetpack/v4/connection` is a false negative** — the resolver builds the path from a `"/jetpack/v4"` constant, so the literal never appears in the bundle |
 | `woocommerce_remote_variant_assignment` | `grep -o` in `app/index.js` **and** `embed/index.js` | 1 + 1 | A second client-side consumer appears (count rises), or the banner moves to a different gate (count drops to 0, making the `Options.php` hunk dead weight) |
@@ -118,8 +142,9 @@ Run from the **clean** extraction, not the patched one.
 | `case 'range'` in `RemoteSpecs/RuleProcessors/ComparisonOperation.php` | Confirm it is still `>= $right[0] && <= $right[1]` | both-bounded | Upstream adds a one-sided operator. `0` would then start *matching* cohorts instead of avoiding them |
 | `record_gateway_event()` in `includes/class-wc-payment-gateways.php` | Method still exists, signature unchanged | 1 | **Load-bearing.** This one also guards a fatal, so losing it is worse than losing a telemetry strip |
 | `createStatsdURL` in `assets/js/frontend/a8c-address-autocomplete-service.js` | `grep -c` | 2 | File rebuilt or renamed. It is a shipped JS asset, so it churns more than the PHP |
-| `is_in_canary_cohort()` in `src/Internal/VariationGallery/Package.php` | Method still exists and is still referenced by `enabled_by_default` | 2 | Cohort logic inlined or moved. Auto-enrolment returns |
-| Forced feature options | Each slug still in `FeaturesController::get_feature_definitions()` **without** an `option_key` override | `remote_logging`, `blueprint`, `point_of_sale` all present, none overridden | A feature gaining an `option_key` orphans our forced `woocommerce_feature_<slug>_enabled` write. Note the literal option name does **not** appear in source — it is built by `sprintf( 'woocommerce_feature_%s_enabled', $slug )` at `FeaturesController.php:706`, so grepping for the full option name returns 0 hits and proves nothing |
+| `is_in_canary_cohort()` in `src/Internal/VariationGallery/Package.php` | Count only — the method is now a deprecated proxy for `is_enabled()` and is no longer referenced by `enabled_by_default` | 1 (was 2 in 11.0.1) | ~~Cohort logic inlined or moved~~ — **this row is spent.** The 2 → 1 drop in 11.1.0 is what caught the gallery graduating to 100%. It has done its job; **retire this row at 11.2** when the two `Package.php` hunks retire |
+| Forced feature options | Each slug still in `FeaturesController::get_feature_definitions()` **without** an `option_key` override, **and without `deprecated_since`** | `remote_logging` and `blueprint` present, unoverridden, not deprecated. `point_of_sale` present but **deprecated-on since 11.0.0** and `reactify-classic-payments-settings` **gone entirely** — both forces are dead, see Options Enforcement | A feature gaining an `option_key` orphans our forced `woocommerce_feature_<slug>_enabled` write. Note the literal option name does **not** appear in source — it is built by `sprintf( 'woocommerce_feature_%s_enabled', $slug )` at `FeaturesController.php:706`, so grepping for the full option name returns 0 hits and proves nothing |
+| New `deprecated_since` + `deprecated_value => true` on any feature | `grep -n 'deprecated_since' src/Internal/Features/FeaturesController.php` | 4: `marketplace` (10.5.0), `dual_code_graphql_api` (10.9.2), `point_of_sale` (11.0.0), `variation_gallery` (11.1.0) | **This is the mechanism that defeats the feature-default pin.** `feature_is_enabled()` returns `deprecated_value` before it reads the option, so a feature that gains these two keys is forced on and neither the pin nor a forced `'no'` can stop it — it needs its own hunk, as the variation gallery did. A count above 4 means a new feature has been switched on this way |
 | Leading `;` on both `WCAdminAssets.php` inline scripts | Read the hunk | present | Not drift, but the highest-consequence regression in the set. `Features.php` emits `window.wcAdminFeatures = {…}` with no trailing semicolon, so ASI does not break the statement and the next `(` parses as a call on the object. This has taken the whole Extensions screen down once |
 
 ## Future Candidates

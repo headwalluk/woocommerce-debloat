@@ -37,11 +37,13 @@ Each patch targets a specific version of WooCommerce. The changes are conservati
   - `woocommerce_show_marketplace_suggestions`
   - `woocommerce_feature_remote_logging_enabled`
   - `woocommerce_feature_blueprint_enabled`
-  - `woocommerce_feature_point_of_sale_enabled`
+  - `woocommerce_feature_point_of_sale_enabled` — **no longer effective as of WC 11.0.0.** WooCommerce marked this feature deprecated with a hardcoded `true`, so it is reported as enabled whatever the option says. Nothing in WooCommerce's PHP acts on the flag (it enables Point of Sale in the WooCommerce mobile apps), so there is nothing left to switch off
 - Force-sets `woocommerce_remote_variant_assignment` to `0`. This is the sticky random 1–120 bucket WooCommerce assigns at install, which its Remote Spec Engines test against to roll features and plugin recommendations out to a percentage of stores without asking. `0` matches no cohort, so your store is opted out of these staged rollouts
 
 **Silent feature rollouts**
-- Disables the variation gallery canary cohort (WC 11.0.0+), which would otherwise switch the product gallery UI on for ~5% of stores on upgrade with no merchant action. An explicit opt-in via Settings → Advanced → Features still works
+- Holds back the variation gallery, which would otherwise change the product gallery UI with no merchant action. In WC 11.0.0 this was a canary cohort switching it on for ~5% of stores on upgrade; **WC 11.1.0 hardcoded it on for everyone** and removed every option, filter and toggle that could stop it, so the patch restores the previous contract instead. An explicit opt-in via Settings → Advanced → Features still works. **This is a one-release reprieve: the hold-back retires at WC 11.2**, at which point the gallery UI switches on and the Additional Variation Images data migration runs
+- Pins the shipped `off` default of every WooCommerce feature that currently ships off (WC 11.1.0+). Write-once, and only where the option is absent, so anything you have enabled yourself stays enabled — it just stops a future WooCommerce release silently switching a feature on for stores that never touched the toggle
+- Disables the legacy Select2 usage tracker (WC 11.1.0+), which reports which of your plugins still enqueue the legacy `select2` handles, including the file path of each dependent script
 
 **What the patch deliberately leaves alone**
 - WooCommerce.com subscription checking and licence validation
@@ -57,6 +59,7 @@ Patches are provided per WooCommerce version. Check the `patches/` directory for
 
 | WooCommerce | Patch file |
 |---|---|
+| 11.1.0 | `patches/woocommerce-11.1.0.patch` |
 | 11.0.1 | `patches/woocommerce-11.0.1.patch` |
 | 11.0.0 | `patches/woocommerce-11.0.0.patch` |
 | 10.9.4 | `patches/woocommerce-10.9.4.patch` |
