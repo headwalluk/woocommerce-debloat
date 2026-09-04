@@ -6,6 +6,67 @@ All notable changes to the patch set are documented here, grouped by WooCommerce
 
 ## 11.1.0 — 2026-09-03
 
+### Revision 2026-09-04 — badge priority, and the WooPayments incentives API call
+
+Two changes to the shipped 11.1.0 patch. The badge date moves to `2026-09-04` so a site carrying the
+revision is distinguishable from one carrying the original build. File count goes 23 → 24.
+
+**New target — the WooPayments incentives API call (`src/Internal/Admin/Suggestions/Incentives/Incentive.php`). Tier 1.**
+Caught on a live admin dashboard, which fired:
+
+```
+https://public-api.wordpress.com/wpcom/v2/wcpay/incentives?country=GB&locale=en_GB&active_for=109986860&has_orders=1&has_payments=1
+```
+
+That is the store's country, locale, **age in seconds since wc-admin was installed**, whether it has
+orders, and whether it has enabled payment gateways — handed to Automattic in a query string, with the
+site URL in the `User-Agent` header on top. It is fired from `admin_menu`, so it is on the path of
+**every admin page load**, not just the Payments screens: `PaymentsController::add_menu()` calls
+`store_has_providers_with_incentive()` to decide whether to hang a notice badge off the Payments menu
+item, and that walks the whole provider list down to `WooPayments::get_incentives()`.
+
+The cut goes in `Incentive::get_all()`, the abstract base method, which is the single choke point:
+`get_by_id()`, `get_by_promo_id()` and `PaymentsExtensionSuggestionIncentives::get_incentives()` all
+call it, and the concrete `get_incentives()` fetcher that does the `wp_remote_get()` has no other
+caller in the tree. Early-returning an empty array there is the ordinary "no incentive available"
+path that every caller already handles, so nothing needs a second hunk: the Payments menu badge stops
+rendering, the `_incentive` key stops being attached to suggestions, and `WcPayWelcomePage::has_incentive()`
+goes false so the WooPayments welcome page stops appearing. No CSS, no stub route, no fatal risk.
+
+**Why the existing `PaymentsProviders::get_extension_suggestions()` early-return did not already cover it.**
+That hunk kills the *suggestions list*. This call arrives by a different route —
+`enhance_payment_gateway_details()` → `get_extension_suggestion_by_plugin_slug()` →
+`PaymentsExtensionSuggestions::get_by_plugin_slug()` → `get_country_extensions()` →
+`get_extension_incentive()` — which enhances the *already-installed* gateways rather than suggesting new
+ones, and never passes through the early-returned method. Worth remembering: severing a list-builder
+does not sever the per-item enhancers that hang off the same subsystem.
+
+**`plugin_row_meta` badge filter now registers at `PHP_INT_MAX` instead of `10` (`woocommerce.php`).**
+At priority 10 the badge sits mid-chain and anything registering later that rebuilds or truncates
+`$links` drops it, which makes the patch look unapplied on the Plugins screen. Running last means the
+badge is added after every other contributor has had its turn.
+
+**Reproducing it.** The call is masked in normal use by two caches — a per-request memo and the
+`woocommerce_admin_pes_incentive_woopayments_cache` transient — so a page reload usually shows
+nothing. `wp cache flush` followed by an admin page load fires it reliably, which is how the fix was
+confirmed. Note also the hour-long `woocommerce_admin_settings_payments_has_providers_with_incentive`
+transient: a site holding a stale `yes` keeps rendering the Payments menu badge after the patch lands,
+with no outbound call behind it. It expires on its own — don't read it as the patch having missed.
+
+**On what actually leaks.** The `User-Agent` on this request is *not* the browser's. It is set
+server-side by `WooPayments::get_incentives()` to `'WooCommerce/' . WC()->version . '; ' . get_bloginfo( 'url' )`
+— so it carries the **site URL and WooCommerce version**, not a browser fingerprint. Still a leak, and
+still one the store never consented to, but it is a `wp_remote_get()` from PHP: the visiting browser is
+not party to it and no client IP reaches Automattic. Worth being precise about, because it changes who
+is exposed — the store, not the person looking at the dashboard.
+
+Both changes verified against a pristine 11.1.0 extraction: zero rejects, zero fuzz, zero offset, no
+`.orig`/`.rej` left behind, and `php -l` clean on both touched files. Then deployed via `wpatch` and
+**confirmed live on `devx.headwall.tech` on 2026-09-04**: with the object cache flushed and the admin
+page reloaded — the sequence that reliably fires the call on an unpatched store — no request to
+`public-api.wordpress.com/wpcom/v2/wcpay/incentives` is made, and the admin pages render normally.
+
+
 Not bump-only. The file count stays at **23**, but that hides a swap: the 11.0.0 variation gallery canary hunk is retired and replaced by two different hunks in the same file, and two new targets are added.
 
 Analysed on 2026-09-01 against `11.1.0-rc.1` and re-verified against the final build on release day. WooCommerce shipped an `rc.2` on 2026-09-03 at 09:03 UTC and tagged the final some four hours later, so the "RC is byte-identical to final" precedent from 11.0.0 was **not** assumed this time. Diffing clean rc.1 against clean 11.1.0 finds 22 changed files out of 5862, and exactly two of them are files we patch: `woocommerce.php` and `includes/class-woocommerce.php`, both **version string only**. The candidate patch built against rc.1 therefore applied to the final tree with zero rejects, zero offsets and zero fuzz. The wp.org and GitHub builds of 11.1.0 were compared and are byte-identical across all 5862 files, so there is one source of truth regardless of which the fleet pulls from.

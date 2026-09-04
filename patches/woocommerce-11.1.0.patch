@@ -404,6 +404,29 @@ diff -ruN woocommerce-11.1.0/src/Internal/Admin/Settings/PaymentsProviders.php w
  		// Normalize the location to uppercase.
  		$location = strtoupper( $location );
  
+diff -ruN woocommerce-11.1.0/src/Internal/Admin/Suggestions/Incentives/Incentive.php woocommerce-11.1.0-patched/src/Internal/Admin/Suggestions/Incentives/Incentive.php
+--- woocommerce-11.1.0/src/Internal/Admin/Suggestions/Incentives/Incentive.php	2026-08-18 09:58:52.000000000 +0100
++++ woocommerce-11.1.0-patched/src/Internal/Admin/Suggestions/Incentives/Incentive.php	2026-09-04 21:17:55.064081596 +0100
+@@ -59,6 +59,19 @@
+ 	 * @return array The incentives list with details for each incentive.
+ 	 */
+ 	public function get_all( string $country_code, string $incentive_type = '' ): array {
++		// 2026-09-04 PF. Every incentive lookup funnels through here: get_by_id(),
++		// get_by_promo_id() and PaymentsExtensionSuggestionIncentives::get_incentives()
++		// all call it, and the concrete get_incentives() fetcher has no other caller.
++		// WooPayments::get_incentives() does an uncached wp_remote_get() to
++		// public-api.wordpress.com/wpcom/v2/wcpay/incentives with the store's country,
++		// locale, age, order count and payment-gateway state in the query string --
++		// fired from admin_menu on every admin page load via
++		// PaymentsController::store_has_providers_with_incentive(). Returning an empty
++		// list here is the normal "no incentive available" path: callers already handle
++		// it, so the Payments menu badge, the WooPayments welcome page and the
++		// `_incentive` key on suggestions all simply stop appearing.
++		return array();
++
+ 		$incentives = array_filter(
+ 			$this->get_incentives( $country_code ),
+ 			fn( $incentive ) => $this->validate_incentive( $incentive )
 diff -ruN woocommerce-11.1.0/src/Internal/Admin/WCAdminAssets.php woocommerce-11.1.0-patched/src/Internal/Admin/WCAdminAssets.php
 --- woocommerce-11.1.0/src/Internal/Admin/WCAdminAssets.php	2026-08-25 11:11:12.000000000 +0100
 +++ woocommerce-11.1.0-patched/src/Internal/Admin/WCAdminAssets.php	2026-09-03 15:52:58.523743944 +0100
@@ -523,8 +546,8 @@ diff -ruN woocommerce-11.1.0/vendor/automattic/jetpack-connection/src/class-plug
  	/**
 diff -ruN woocommerce-11.1.0/woocommerce.php woocommerce-11.1.0-patched/woocommerce.php
 --- woocommerce-11.1.0/woocommerce.php	2026-09-03 09:20:30.000000000 +0100
-+++ woocommerce-11.1.0-patched/woocommerce.php	2026-09-03 15:59:10.701965018 +0100
-@@ -73,3 +73,18 @@
++++ woocommerce-11.1.0-patched/woocommerce.php	2026-09-04 21:17:37.491800134 +0100
+@@ -73,3 +73,19 @@
  if ( class_exists( \Automattic\Jetpack\Connection\Rest_Authentication::class ) ) {
  	\Automattic\Jetpack\Connection\Rest_Authentication::init();
  }
@@ -534,12 +557,13 @@ diff -ruN woocommerce-11.1.0/woocommerce.php woocommerce-11.1.0-patched/woocomme
 +	'plugin_row_meta',
 +	function ( $links, $file ) {
 +		if ( $file == 'woocommerce/woocommerce.php' ) {
-+			$links['wpatcher'] = '<span style="background-color: purple; color: white; padding:0.2em 0.5em; font-weight: 700; border-radius: 0.3em">PATCHED : 2026-09-03</span>';
++			$links['wpatcher'] = '<span style="background-color: purple; color: white; padding:0.2em 0.5em; font-weight: 700; border-radius: 0.3em">PATCHED : 2026-09-04</span>';
 +		}
 +
 +		return $links;
 +	},
-+	10,
++	// Run last so nothing registered later can strip the badge.
++	PHP_INT_MAX,
 +	2
 +);
 +// END : wpatcher

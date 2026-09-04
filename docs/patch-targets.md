@@ -37,6 +37,7 @@ Last updated: 2026-09-03
 | `src/Admin/RemoteInboxNotifications/RemoteInboxNotificationsDataSourcePoller.php` | `get_data_sources()` | Early return `[]` | Blocks promotional inbox notification fetches (daily cron) from `woocommerce.com` |
 | `src/Internal/Admin/Settings/Payments.php` | `get_extension_suggestions` call | Comment out | Prevents extension suggestions appearing on Payments settings page |
 | `src/Internal/Admin/Settings/PaymentsProviders.php` | `get_extension_suggestions()` | Early return empty structure | Prevents extension suggestion lookups |
+| `src/Internal/Admin/Suggestions/Incentives/Incentive.php` | `get_all()` | Early return `[]` | Blocks the WooPayments incentives fetch to `public-api.wordpress.com/wpcom/v2/wcpay/incentives`, which sends store country, locale, age in seconds, whether the store has orders and whether it has enabled gateways — fired from `admin_menu` on **every** admin page load via `PaymentsController::store_has_providers_with_incentive()`. `get_all()` is the abstract base method every incentive lookup funnels through (`get_by_id()`, `get_by_promo_id()`, `PaymentsExtensionSuggestionIncentives::get_incentives()`), and the concrete fetcher has no other caller. Also stops the Payments menu notice badge and the WooPayments welcome page. Note this arrives by a different route than the `get_extension_suggestions()` row above — via `enhance_payment_gateway_details()`, which enhances already-installed gateways rather than suggesting new ones |
 | `src/Internal/Admin/WCAdminAssets.php` | `enqueue_assets()` | Inline style + inline script injected | Suppresses the two Marketplace upsell surfaces on the Extensions screen: `.woocommerce-marketplace__banner` (4-slide woocommerce.com carousel, top) and `.woocommerce-marketplace__footer` (same 4 messages, bottom). Both are hardcoded in the compiled `assets/client/admin/app/index.js` with no PHP hook or filter to unhook, and the bundle is a single 248 KB minified line so it cannot be diffed. The script seeds `localStorage.wc_featuredBannerDismissed = 'true'` — the carousel's own dismiss flag — so it renders `null` and emits no DOM; the CSS only covers the flash before that effect runs, and is the sole surviving exception to the no-CSS-masking rule. Note the flag outlives the patch: clear that localStorage key to restore the carousel. **Both inline snippets must keep their leading `;`** — see the drift watchlist |
 
 ### WooCommerce.com Remote Access
@@ -113,7 +114,7 @@ It does **not** block `WC_Install::enable_email_improvements_for_existing_mercha
 
 | File | Target | Patch | Why |
 |------|--------|-------|-----|
-| `woocommerce.php` | `plugin_row_meta` filter | Appended | Adds purple "PATCHED" badge with date to plugin list for at-a-glance verification |
+| `woocommerce.php` | `plugin_row_meta` filter | Appended at `PHP_INT_MAX` | Adds purple "PATCHED" badge with date to plugin list for at-a-glance verification. Registered at `PHP_INT_MAX` rather than the default `10` so it runs after every other contributor — at 10 anything registering later that rebuilds or truncates `$links` drops the badge, making the patch look unapplied |
 
 ### Cosmetic
 
@@ -199,5 +200,5 @@ For reference, these are the external domains that WooCommerce contacts:
 | `pixel.wp.com` | Event tracking pixels (admin actions, checkout autocomplete) |
 | `stats.wp.com` | Tracking JavaScript library |
 | `woocommerce.com` | Marketplace suggestions, extension recommendations, inbox notifications, promotions, onboarding |
-| `public-api.wordpress.com` | A/B test assignments, remote logging, Jetpack error reports |
+| `public-api.wordpress.com` | A/B test assignments, remote logging, Jetpack error reports, WooPayments incentive eligibility (`/wpcom/v2/wcpay/incentives`) |
 | `download.maxmind.com` | GeoIP database updates (requires licence key — legitimate functionality) |
