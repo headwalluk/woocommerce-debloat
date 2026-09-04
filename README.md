@@ -23,6 +23,7 @@ Each patch targets a specific version of WooCommerce. The changes are conservati
 **Marketplace & upsells**
 - Disables marketplace suggestions and payment provider recommendations
 - Removes payment extension suggestions from the Payments settings page
+- Blocks the WooPayments incentive lookup, which called `public-api.wordpress.com/wpcom/v2/wcpay/incentives` on **every admin page load** — not just the Payments screens — sending your store's country, locale, age in seconds, whether it has orders and whether it has enabled payment gateways, with the site URL and WooCommerce version in the request's `User-Agent`. Also removes the notice badge it hung off the Payments menu item and the WooPayments welcome page
 - Comments out the marketplace updater and promotions includes
 - Hides the two woocommerce.com upsell surfaces on the Extensions screen: the rotating "Marketplace features" carousel at the top, and the marketplace footer repeating the same four messages at the bottom. Both are hardcoded adverts — money-back guarantee, support, product quality, ecosystem. No store notice or admin alert can appear in either
 
