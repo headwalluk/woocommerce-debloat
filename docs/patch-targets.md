@@ -126,7 +126,7 @@ It does **not** block `WC_Install::enable_email_improvements_for_existing_mercha
 
 ## Drift Watchlist
 
-A clean apply proves a hunk still *fits*. It does not prove the hunk still *does* anything. These are the targets that can go silently dead on a WooCommerce upgrade, with the anchor to check and the baseline count as of clean 11.1.0. Nothing in `patch`, `php -l` or the apply log will flag any of them.
+A clean apply proves a hunk still *fits*. It does not prove the hunk still *does* anything. These are the targets that can go silently dead on a WooCommerce upgrade, with the anchor to check and the baseline count as of clean 11.1.0 (re-verified unchanged against clean 11.1.1). Nothing in `patch`, `php -l` or the apply log will flag any of them.
 
 Run from the **clean** extraction, not the patched one — and against the **final** build, not an RC: the admin bundle can be rebuilt between the two.
 

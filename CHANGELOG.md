@@ -4,6 +4,44 @@ All notable changes to the patch set are documented here, grouped by WooCommerce
 
 ---
 
+## 11.1.1 — 2026-09-18
+
+Bump-only. 11.1.1 is a security point release shipped fifteen days after 11.1.0. The 11.1.0 patch (the
+2026-09-04 revision) applied cleanly against it, with a single −14 line offset in
+`src/Admin/API/Options.php`, and the per-version patch was regenerated so it applies with no offset on a
+fresh extraction. Every changed line is byte-identical to the 11.1.0 revision apart from the `PATCHED`
+badge, bumped to `2026-09-18`. The file count stays at 24.
+
+**This carries the 2026-09-04 revision forward.** Any store still on the original 11.1.0 build picks up the
+WooPayments incentives block and the `PHP_INT_MAX` badge priority with this upgrade.
+
+**What 11.1.1 changes.** Twelve PHP/text files outside the compiled blocks assets, all hardening: REST API
+key authentication now trusts a `rest_route` query parameter only once `wp_is_rest_endpoint()` confirms
+genuine REST dispatch (#68827); the session handler drops its legacy `wp_fast_hash()` cookie fallback;
+the mobile-app QR login endpoints require a real `logged_in` cookie plus a `wp_rest` nonce; and the
+deprecated legacy Options API refuses all non-allowlisted updates and drops `blogname`, `date_format`,
+`time_format` and the theme options from its read allowlist (#68862). The remaining change is a Mini Cart
+stylesheet fix (#68790).
+
+**Our `Options.php` hunk is unaffected.** Upstream's edits are to `get_default_option_permissions()` and the
+allowlist above our target; `woocommerce_remote_variant_assignment` is still allowlisted and still
+blanked before it reaches the client.
+
+**Analysis — no new phone-home targets.** None of the changed files adds an outbound call, a Tracks event
+or an Automattic endpoint. Full-tree counts are identical between clean 11.1.0 and clean 11.1.1:
+`wp_(safe_)remote_*` 227 occurrences (a wider regex than the 185 quoted under 11.1.0, measured the same
+way on both trees), `WC_Tracks::record_event` 59, and four features carrying `deprecated_since`. Neither
+admin bundle, `FeaturesController.php`, `ComparisonOperation.php`, `class-wc-payment-gateways.php`,
+`VariationGallery/Package.php` nor the address-autocomplete JS changed, so every drift watchlist anchor is
+at its 11.1.0 baseline; the bundle anchors were re-counted to confirm.
+
+Verified against a pristine 11.1.1 extraction in the exact `patch -p1 --directory=woocommerce` shape
+`wpatch` uses: zero rejects, fuzz or offset; round-trip byte-identical to the built tree; `php -l` clean
+on all 23 PHP files and `node --check` clean on the JS file. Both `WCAdminAssets.php` inline scripts keep
+their leading `;`. Not yet validated on a live site.
+
+---
+
 ## 11.1.0 — 2026-09-03
 
 ### Revision 2026-09-04 — badge priority, and the WooPayments incentives API call

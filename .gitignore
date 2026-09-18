@@ -6,6 +6,9 @@ work/
 *.rej
 *.orig
 
+# Local research notes that reference production sites. Never committed.
+dev-notes/
+
 # Editor / OS cruft
 .DS_Store
 Thumbs.db

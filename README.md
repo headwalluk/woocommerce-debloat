@@ -60,6 +60,7 @@ Patches are provided per WooCommerce version. Check the `patches/` directory for
 
 | WooCommerce | Patch file |
 |---|---|
+| 11.1.1 | `patches/woocommerce-11.1.1.patch` |
 | 11.1.0 | `patches/woocommerce-11.1.0.patch` |
 | 11.0.1 | `patches/woocommerce-11.0.1.patch` |
 | 11.0.0 | `patches/woocommerce-11.0.0.patch` |
