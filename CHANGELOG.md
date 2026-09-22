@@ -4,6 +4,32 @@ All notable changes to the patch set are documented here, grouped by WooCommerce
 
 ---
 
+## 11.1.2 — 2026-09-22
+
+Bump-only. 11.1.2 is a second security point release, four days after 11.1.1. The 11.1.1 patch applied
+cleanly against it with no offset or fuzz. Every changed line is byte-identical to 11.1.1 apart from the
+`PATCHED` badge, bumped to `2026-09-22`. The file count stays at 24.
+
+**What 11.1.2 changes.** Two fixes, neither in a file we patch. Order review submissions
+(`src/Internal/OrderReviews/SubmissionHandler.php`) now go through `wp_new_comment()` and
+`wp_check_comment_data()` instead of a raw `wp_insert_comment()`, so they get core's kses, disallowed-keys,
+moderation and spam filtering. The v1 product reviews REST controller does the same via
+`wp_filter_comment()` (#68961). Separately, `wc_render_product_image_template_for_image_ids()` gains a
+re-entrancy guard against recursive variation gallery renders (#68965). That function only runs on the
+variation gallery swap path, which our `VariationGallery/Package.php` hunks keep switched off, so the fix
+has nothing to interact with.
+
+**Analysis: no new phone-home targets.** No compiled asset changed. Full-tree counts are identical
+between clean 11.1.1 and clean 11.1.2: `wp_(safe_)remote_*` 227, `WC_Tracks::record_event` 59.
+`FeaturesController.php` did not change. No watchlist anchor file changed.
+
+Verified against a pristine 11.1.2 extraction in the exact `patch -p1 --directory=woocommerce` shape
+`wpatch` uses: zero rejects, fuzz or offset; round-trip byte-identical to the built tree; `php -l` clean
+on all 23 PHP files and `node --check` clean on the JS file. Both `WCAdminAssets.php` inline scripts keep
+their leading `;`. Not yet validated on a live site.
+
+---
+
 ## 11.1.1 — 2026-09-18
 
 Bump-only. 11.1.1 is a security point release shipped fifteen days after 11.1.0. The 11.1.0 patch (the
