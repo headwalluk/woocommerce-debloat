@@ -4,6 +4,55 @@ All notable changes to the patch set are documented here, grouped by WooCommerce
 
 ---
 
+## 11.2.0 — 2026-10-07
+
+Not bump-only: one hunk pair retired, one new target added. The 11.1.2 patch applied cleanly against 11.2.0,
+with offsets only. The `PATCHED` badge is bumped to `2026-10-07`. The file count stays at 24: 24 − 1 (`Package.php`) + 1
+(`class-wc-tracker.php`).
+
+**New target: `includes/class-wc-tracker.php::send_tracking_data()` → early return. Tier 1.** This gap is
+older than 11.2.0. When a store connects to WooCommerce.com, `WC_Helper::_helper_auth_return()` forces
+`woocommerce_allow_tracking` to `'yes'` and calls `WC_Tracker::send_tracking_data( true )` directly. That skips
+the `add_woocommerce_tracker_send_event_wrapper()` early return, and the method has no consent check of its own.
+So connecting for extension updates silently opted the store in and posted the full tracker snapshot to
+`tracking.woocommerce.com/v1/`: site URL, admin email, store ID, settings, gateways, product/order/user counts,
+active and inactive plugins, theme and server environment. Our forced `woocommerce_allow_tracking = no` put the
+option back on the next load, after the data had gone. 11.2.0 makes it worse: the send is now blocking, with a
+10 second timeout and retries, inside the connect request. The early return sits on the method every sender
+funnels through, so it also covers the `TrackingOptIn` inbox note's scheduled send.
+
+**Retired: both `src/Internal/VariationGallery/Package.php` hunks**, by the standing decision recorded at
+11.1.0. On upgrade the product gallery UI switches on for every store and `maybe_schedule_migration()` queues
+the Additional Variation Images data migration. That is expected, not a regression. The `is_in_canary_cohort()`
+watchlist row retires with them. `woocommerce_remote_variant_assignment` stays forced to `0`, because it
+defeats other cohorts too.
+
+**Analysis: nothing else new needs a patch.**
+- Drift watchlist: every anchor is at baseline against clean 11.2.0, including the bundle class names,
+  `isJetpackConnected`, the cohort option and the both-bounded `range` rule. There are still 4 deprecated
+  features. The watchlist row naming them was wrong: the 10.9.2 deprecation is `push_notifications`, not
+  `dual_code_graphql_api`. Corrected.
+- Counts: `wp_(safe_)remote_*`, `pixel.wp.com`, `tracking.woocommerce.com`, `public-api.wordpress.com`,
+  `DataSourcePoller` and `stats.wp.com` are flat. `WC_Tracks::record_event` goes 59 → 60 with the new
+  `products_sorting_view` event, which our master switch already blocks.
+- Removed upstream: the GraphQL API (`src/Api`, `dual_code_graphql_api`), agentic checkout, abandoned cart
+  recovery and the daily `PTKPatternsStore` cron. The feature-default pin drops from 23 to 21 options.
+- New `vendor/automattic/tracks-shared-utils`: a URL sanitiser for Tracks referrer and location props. It
+  improves privacy and is inert behind the tracking master switch.
+- Back in Stock notifications are now the registered feature `customer_stock_notifications`, experimental
+  and off, so the pin covers them. Their new `Telemetry.php` only adds data to `woocommerce_tracker_data`.
+- Push notifications moved their gate into `DriverAvailabilityService`, but it still needs a Jetpack blog
+  connection, which we sever. The new status REST route is read-only and authenticated.
+- `WC_Helper` gained WooCommerce.com rate-limit backoff and subscription auto-update management. That is
+  licence and update functionality, so it is out of scope.
+
+Verified against a pristine 11.2.0 extraction in the `patch -p1 --directory=woocommerce` shape `wpatch` uses:
+zero rejects, round-trip byte-identical to the built tree, `php -l` clean on all 23 PHP files and
+`node --check` clean on the JS file. Both `WCAdminAssets.php` inline scripts keep their leading `;`. Not yet
+validated on a live site.
+
+---
+
 ## 11.1.2 — 2026-09-22
 
 Bump-only. 11.1.2 is a second security point release, four days after 11.1.1. The 11.1.1 patch applied

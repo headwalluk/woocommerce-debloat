@@ -18,6 +18,7 @@ Each patch targets a specific version of WooCommerce. The changes are conservati
 - Disables `WC_Site_Tracking` unconditionally, regardless of the admin setting
 - Neuters `WC_Tracks_Client::init()` to prevent identity cookies being set on admin sessions
 - Stops `WC_Tracker` from initialising via the cron wrapper, even if the `woocommerce_allow_tracking` option is somehow re-enabled
+- Stops `WC_Tracker` sending its snapshot at all (WC 11.2.0+). Connecting your store to WooCommerce.com silently switched usage tracking on and immediately posted the full tracker report to `tracking.woocommerce.com`: your site URL, admin email address, store ID, settings, product, order and user counts, and active plugins. It called the sender directly, so the cron-wrapper block above never saw it
 - Injects a `wcTracks` JavaScript stub so the admin UI doesn't generate console errors
 
 **Marketplace & upsells**
@@ -42,7 +43,7 @@ Each patch targets a specific version of WooCommerce. The changes are conservati
 - Force-sets `woocommerce_remote_variant_assignment` to `0`. This is the sticky random 1–120 bucket WooCommerce assigns at install, which its Remote Spec Engines test against to roll features and plugin recommendations out to a percentage of stores without asking. `0` matches no cohort, so your store is opted out of these staged rollouts
 
 **Silent feature rollouts**
-- Holds back the variation gallery, which would otherwise change the product gallery UI with no merchant action. In WC 11.0.0 this was a canary cohort switching it on for ~5% of stores on upgrade; **WC 11.1.0 hardcoded it on for everyone** and removed every option, filter and toggle that could stop it, so the patch restores the previous contract instead. An explicit opt-in via Settings → Advanced → Features still works. **This is a one-release reprieve: the hold-back retires at WC 11.2**, at which point the gallery UI switches on and the Additional Variation Images data migration runs
+- Held back the variation gallery through WC 11.1.x. **The hold-back is retired as of WC 11.2.0**: the gallery is local, first-party functionality with no phone-home, and upstream has shipped it to every store. On upgrade to the 11.2.0 patch the product gallery UI switches on and the Additional Variation Images data migration runs
 - Pins the shipped `off` default of every WooCommerce feature that currently ships off (WC 11.1.0+). Write-once, and only where the option is absent, so anything you have enabled yourself stays enabled — it just stops a future WooCommerce release silently switching a feature on for stores that never touched the toggle
 - Disables the legacy Select2 usage tracker (WC 11.1.0+), which reports which of your plugins still enqueue the legacy `select2` handles, including the file path of each dependent script
 
@@ -60,6 +61,7 @@ Patches are provided per WooCommerce version. Check the `patches/` directory for
 
 | WooCommerce | Patch file |
 |---|---|
+| 11.2.0 | `patches/woocommerce-11.2.0.patch` |
 | 11.1.2 | `patches/woocommerce-11.1.2.patch` |
 | 11.1.1 | `patches/woocommerce-11.1.1.patch` |
 | 11.1.0 | `patches/woocommerce-11.1.0.patch` |
