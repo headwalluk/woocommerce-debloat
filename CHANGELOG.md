@@ -4,6 +4,34 @@ All notable changes to the patch set are documented here, grouped by WooCommerce
 
 ---
 
+## 11.2.1 — 2026-10-09
+
+Bump-only. 11.2.1 is an emergency point release, two days after 11.2.0. The 11.2.0 patch applied cleanly
+against it with no offset or fuzz. Every changed line, hunk headers included, is byte-identical to 11.2.0
+apart from the `PATCHED` badge, bumped to `2026-10-09`. The file count stays at 24.
+
+**What 11.2.1 changes.** Two checkout regressions from 11.2.0 are reverted, and neither touches a file we
+patch. The classic checkout's `update_order_review`, `apply_coupon` and `remove_coupon` requests go back to
+passing a data object to `$.ajax()` instead of a pre-serialised `encodeApostrophes( $.param( data ) )`
+string (#69649, reverting #68365). The string form sent fields removed via `woocommerce_billing_fields` as
+empty values, blanking the session customer's country, state and postcode: orders failed with "Please
+enter an address to continue." and shipping options disappeared. It also handed third-party
+`ajaxPrefilter` callbacks a string where they expected an object. Separately, the Checkout block's
+`postcode-validator` package is pinned back from 3.10.22 to 3.9.2, which had made four-digit Argentine
+postcodes invalid (#69662). Only `assets/js/frontend/checkout(.min).js`, the two compiled cart/checkout
+block bundles and `i18n/postcode-validation-rules.json` changed, plus version strings.
+
+**Analysis: no new phone-home targets.** No PHP changed beyond version strings. Full-tree counts are
+identical between clean 11.2.0 and clean 11.2.1: `wp_(safe_)remote_*` 225, `WC_Tracks::record_event` 60.
+`FeaturesController.php` and every watchlist anchor file are unchanged.
+
+Verified against a pristine 11.2.1 extraction in the exact `patch -p1 --directory=woocommerce` shape
+`wpatch` uses: zero rejects, fuzz or offset; round-trip byte-identical to the built tree; `php -l` clean
+on all 23 PHP files and `node --check` clean on the JS file. Both `WCAdminAssets.php` inline scripts keep
+their leading `;`. Not yet validated on a live site.
+
+---
+
 ## 11.2.0 — 2026-10-07
 
 Not bump-only: one hunk pair retired, one new target added. The 11.1.2 patch applied cleanly against 11.2.0,
