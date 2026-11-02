@@ -104,7 +104,7 @@ If you manage WooCommerce updates via Composer, Git, or a custom deployment scri
 
 ## After applying
 
-You should see a **PATCHED** badge on the WooCommerce entry in your plugins list (`wp-admin/plugins.php`), showing the date the patch was applied.
+You should see a small green **✓ Patched YYYY-MM-DD** badge on the WooCommerce entry in your plugins list (`wp-admin/plugins.php`), showing the date the patch was built; hover it for a short explanation. Patches for WooCommerce 11.2.1 and earlier show the older bold purple **PATCHED : YYYY-MM-DD** badge instead, which means the same thing.
 
 To verify the patch is working as expected, you can check that:
 - `get_option('woocommerce_allow_tracking')` returns `no`

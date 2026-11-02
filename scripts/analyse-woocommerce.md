@@ -213,7 +213,9 @@ For each new candidate, document:
 For each approved candidate:
 1. Edit the file in the `-patched/` directory
 2. Follow the patch style conventions from CLAUDE.md
-3. Update the PATCHED badge date in `woocommerce.php`
+3. Update the badge date in `woocommerce.php`. If the base patch still carries the purple `PATCHED : YYYY-MM-DD`
+   span, replace it with the green `&#10003; Patched YYYY-MM-DD` span (exact line in CLAUDE.md, "Patch Style
+   Conventions") and note the switch in the changelog entry
 
 Before generating the diff, **delete any `.orig` / `.rej` files** that `patch` may have left behind during Phase 1 — they leak into `diff -ruN` output as fake net-new files and inflate the candidate patch (a real-world bump went from 333 lines to 2336 because of this):
 

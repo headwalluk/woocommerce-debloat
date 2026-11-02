@@ -115,7 +115,7 @@ It does **not** block `WC_Install::enable_email_improvements_for_existing_mercha
 
 | File | Target | Patch | Why |
 |------|--------|-------|-----|
-| `woocommerce.php` | `plugin_row_meta` filter | Appended at `PHP_INT_MAX` | Adds purple "PATCHED" badge with date to plugin list for at-a-glance verification. Registered at `PHP_INT_MAX` rather than the default `10` so it runs after every other contributor — at 10 anything registering later that rebuilds or truncates `$links` drops the badge, making the patch look unapplied |
+| `woocommerce.php` | `plugin_row_meta` filter | Appended at `PHP_INT_MAX` | Adds a green "✓ Patched YYYY-MM-DD" badge with a tooltip to the plugin list for at-a-glance verification (11.2.1 and earlier: bold purple "PATCHED : YYYY-MM-DD"). Registered at `PHP_INT_MAX` rather than the default `10` so it runs after every other contributor — at 10 anything registering later that rebuilds or truncates `$links` drops the badge, making the patch look unapplied |
 
 ### Cosmetic
 

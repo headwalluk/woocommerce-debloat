@@ -21,7 +21,19 @@ Patches use plain unified diff format, generated with `diff -ruN woocommerce-X.Y
 - Comment out `include`/`require` lines rather than removing them
 - Add inline comments explaining why each change is made
 - Keep patches conservative and minimal — only disable what is necessary
-- The "PATCHED" badge block should be updated with the current date for each new patch
+- The badge block at the end of `woocommerce.php` should be updated with the current date for each new patch
+- From 11.3 onward the badge uses the green wpatcher style, not the old bold purple `PATCHED : YYYY-MM-DD`.
+  The canonical block is in wpatcher's `docs/authoring-patches.md` ("The patched badge"); the `$links['wpatcher']`
+  line becomes:
+
+  ```php
+  $links['wpatcher'] = '<span title="Patched to fix security and performance issues" style="display:inline-block; padding:0 0.6em; border:1px solid #b8e6bf; border-radius:999px; background:#edfaef; color:#007017; font-size:12px; line-height:1.6; cursor:help">&#10003; Patched YYYY-MM-DD</span>';
+  ```
+
+  Do not restyle the badge in already-published patches.
+- The badge's `plugin_row_meta` filter is always registered at `PHP_INT_MAX`, with its "Run last" comment,
+  never the default `10`. Anything registering later that rebuilds `$links` would drop the badge and make the
+  patch look unapplied.
 
 ### No CSS masking
 
