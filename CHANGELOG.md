@@ -4,6 +4,43 @@ All notable changes to the patch set are documented here, grouped by WooCommerce
 
 ---
 
+## 11.2.2 — 2026-11-04
+
+Bump-only. 11.2.2 is an unscheduled security release, five days before the expected 11.3. The 11.2.1
+patch applied cleanly against it with no offset or fuzz. Every changed line, hunk headers included, is
+byte-identical to 11.2.1 apart from the `PATCHED` badge, bumped to `2026-11-04`. The badge keeps the purple
+style; the green wpatcher badge starts at 11.3. The file count stays at 24.
+
+**What 11.2.2 changes.** Eleven fixes, all filed as "Fix" but mostly security hardening:
+
+- REST API key authentication is restricted to REST API requests (#70649).
+- The Jetpack connection endpoints used by onboarding (`OnboardingPlugins.php`, `Plugins.php`) now require
+  a logged-in admin browser session with a valid `wp_rest` nonce, via the new
+  `src/Internal/RestApi/InteractiveSessionCheck.php` (#70656).
+- The payments NOX profile option and user meta are no longer passed through a second
+  `maybe_unserialize()`; non-array values are discarded instead (#70642). Upstream changed
+  `Payments.php` and `PaymentsProviders.php`, both files we patch, but away from our hunks.
+- The product CSV importer validates its column mapping (#70646).
+- Store API checkout: each request starts with its own order and payment data (#70637); checkout stops
+  if the order could not be saved, and phone numbers over 100 characters are rejected (#70639); cart item
+  quantity updates are validated (#70657).
+- A chosen shipping method is used only when its rate was calculated for the cart (#70648).
+- Add-to-cart ignores attributes the product does not use (#70651).
+- PayPal Standard shipping updates recalculate shipping and tax (#70653).
+- Custom default attribute values survive a global attribute term slug rename (#70641).
+
+**Analysis: no new phone-home targets.** The two new hooks in the delta (a `rest_authentication_errors`
+fallback and a `woocommerce_cart_calculate_fees` re-add) make no outbound calls. Full-tree counts are
+identical between clean 11.2.1 and clean 11.2.2: `wp_(safe_)remote_*` 225, `WC_Tracks::record_event` 60.
+`FeaturesController.php` and every watchlist anchor file are unchanged.
+
+Verified against a pristine 11.2.2 extraction in the exact `patch -p1 --directory=woocommerce` shape
+`wpatch` uses: zero rejects, fuzz or offset; round-trip byte-identical to the built tree; `php -l` clean
+on all 23 PHP files and `node --check` clean on the JS file. Both `WCAdminAssets.php` inline scripts keep
+their leading `;`. Not yet validated on a live site.
+
+---
+
 ## 11.2.1 — 2026-10-09
 
 Bump-only. 11.2.1 is an emergency point release, two days after 11.2.0. The 11.2.0 patch applied cleanly
