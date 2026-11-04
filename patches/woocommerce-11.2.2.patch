@@ -524,7 +524,7 @@ diff -ruN woocommerce-11.2.2/vendor/automattic/jetpack-connection/src/class-plug
  	/**
 diff -ruN woocommerce-11.2.2/woocommerce.php woocommerce-11.2.2-patched/woocommerce.php
 --- woocommerce-11.2.2/woocommerce.php	2026-11-04 15:40:08.000000000 +0000
-+++ woocommerce-11.2.2-patched/woocommerce.php	2026-11-04 21:15:14.180279661 +0000
++++ woocommerce-11.2.2-patched/woocommerce.php	2026-11-04 21:25:28.896972787 +0000
 @@ -73,3 +73,19 @@
  if ( class_exists( \Automattic\Jetpack\Connection\Rest_Authentication::class ) ) {
  	\Automattic\Jetpack\Connection\Rest_Authentication::init();
@@ -535,7 +535,7 @@ diff -ruN woocommerce-11.2.2/woocommerce.php woocommerce-11.2.2-patched/woocomme
 +	'plugin_row_meta',
 +	function ( $links, $file ) {
 +		if ( $file == 'woocommerce/woocommerce.php' ) {
-+			$links['wpatcher'] = '<span style="background-color: purple; color: white; padding:0.2em 0.5em; font-weight: 700; border-radius: 0.3em">PATCHED : 2026-11-04</span>';
++			$links['wpatcher'] = '<span title="Patched to fix security and performance issues" style="display:inline-block; padding:0 0.6em; border:1px solid #b8e6bf; border-radius:999px; background:#edfaef; color:#007017; font-size:12px; line-height:1.6; cursor:help">&#10003; Patched 2026-11-04</span>';
 +		}
 +
 +		return $links;

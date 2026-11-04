@@ -8,8 +8,10 @@ All notable changes to the patch set are documented here, grouped by WooCommerce
 
 Bump-only. 11.2.2 is an unscheduled security release, five days before the expected 11.3. The 11.2.1
 patch applied cleanly against it with no offset or fuzz. Every changed line, hunk headers included, is
-byte-identical to 11.2.1 apart from the `PATCHED` badge, bumped to `2026-11-04`. The badge keeps the purple
-style; the green wpatcher badge starts at 11.3. The file count stays at 24.
+byte-identical to 11.2.1 apart from the badge line, which also switches from the bold purple
+`PATCHED : YYYY-MM-DD` span to the green wpatcher pill (`&#10003; Patched 2026-11-04`, with a tooltip),
+matching wpatcher's `docs/authoring-patches.md`. `PHP_INT_MAX` and its comment are unchanged. 11.2.2 is the
+first patch with the green badge; earlier patches keep the purple one. The file count stays at 24.
 
 **What 11.2.2 changes.** Eleven fixes, all filed as "Fix" but mostly security hardening:
 
