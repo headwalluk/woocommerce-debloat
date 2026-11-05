@@ -4,6 +4,40 @@ All notable changes to the patch set are documented here, grouped by WooCommerce
 
 ---
 
+## 11.2.2 (revised) — 2026-11-05
+
+Same WooCommerce version, one new target, badge bumped to `&#10003; Patched 2026-11-05`. The badge keeps
+the green wpatcher style and `PHP_INT_MAX`. The file count stays at 24.
+
+**New: pin scheduled Analytics import where unset (tier 1, server-side option write).** In
+`WooCommerce::init()` (`includes/class-woocommerce.php`), after the feature-default pin, the patch writes
+`woocommerce_analytics_scheduled_import` = `yes` only when it and the legacy
+`woocommerce_analytics_immediate_import` are both absent. It writes once and never forces: an explicit
+`yes` or `no` is left alone. Upstream has defaulted new installs to `yes` ("Scheduled (recommended)")
+since 10.5.0, so this only reaches pre-10.5 stores whose owners never chose a mode.
+
+- *Why:* in immediate mode, every order create, update, refund, trash and untrash queues an Action
+  Scheduler job that syncs the order into the analytics lookup tables. Scheduled mode replaces those jobs
+  with one recurring batch job every 12 hours (upstream's default interval, unchanged), working through
+  orders 100 at a time. The saving grows with order volume.
+- *Gated on the watcher:* the write only happens while `OrdersScheduler`'s
+  `add_option_woocommerce_analytics_scheduled_import` hook is registered. That handler sets the batch
+  cursor to one minute before the switch and schedules the recurring job straight away. The hook only
+  exists when Analytics is enabled, so stores with Analytics off are skipped.
+- *Inbox note:* the `ScheduledUpdatesPromotion` note ("Analytics now supports scheduled updates") is
+  deleted in the same branch. Upstream stops adding it once the option exists but never deletes one
+  already in the inbox. A failure to delete it is logged to the `wpatcher` WC log source.
+- *Effect for merchants:* Analytics, the home screen "Store performance" panel and the mobile app's
+  "My Store" stats can lag by up to 12 hours. In scheduled mode, Analytics settings gains an "import now"
+  control. Orders, emails, stock and payments are unaffected. A merchant who wants live figures sets
+  Analytics > Settings > Updates to "Immediately", and the patch respects that.
+
+Verified against a pristine 11.2.2 extraction in the `patch -p1 --directory=woocommerce` shape `wpatch`
+uses: zero rejects, fuzz or offset; round-trip byte-identical; `php -l` clean on both changed files.
+Validated on a dev site via `wpatch`.
+
+---
+
 ## 11.2.2 — 2026-11-04
 
 Bump-only. 11.2.2 is an unscheduled security release, five days before the expected 11.3. The 11.2.1

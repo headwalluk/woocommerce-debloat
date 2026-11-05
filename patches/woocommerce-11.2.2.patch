@@ -1,6 +1,6 @@
 diff -ruN woocommerce-11.2.2/assets/js/frontend/a8c-address-autocomplete-service.js woocommerce-11.2.2-patched/assets/js/frontend/a8c-address-autocomplete-service.js
 --- woocommerce-11.2.2/assets/js/frontend/a8c-address-autocomplete-service.js	2026-11-04 15:40:08.000000000 +0000
-+++ woocommerce-11.2.2-patched/assets/js/frontend/a8c-address-autocomplete-service.js	2026-11-04 21:14:43.143927616 +0000
++++ woocommerce-11.2.2-patched/assets/js/frontend/a8c-address-autocomplete-service.js	2026-11-05 12:26:39.359388131 +0000
 @@ -469,6 +469,8 @@
  }
  
@@ -12,7 +12,7 @@ diff -ruN woocommerce-11.2.2/assets/js/frontend/a8c-address-autocomplete-service
  	}
 diff -ruN woocommerce-11.2.2/includes/admin/helper/class-wc-helper.php woocommerce-11.2.2-patched/includes/admin/helper/class-wc-helper.php
 --- woocommerce-11.2.2/includes/admin/helper/class-wc-helper.php	2026-11-04 15:40:08.000000000 +0000
-+++ woocommerce-11.2.2-patched/includes/admin/helper/class-wc-helper.php	2026-11-04 21:14:43.147927661 +0000
++++ woocommerce-11.2.2-patched/includes/admin/helper/class-wc-helper.php	2026-11-05 12:26:39.363388181 +0000
 @@ -1929,6 +1929,8 @@
  	 * phpcs:ignore Squiz.Commenting.FunctionCommentThrowTag.Missing -- As we wrap the throw in a try/catch.
  	 */
@@ -24,7 +24,7 @@ diff -ruN woocommerce-11.2.2/includes/admin/helper/class-wc-helper.php woocommer
  		if ( false !== $data ) {
 diff -ruN woocommerce-11.2.2/includes/admin/marketplace-suggestions/class-wc-marketplace-suggestions.php woocommerce-11.2.2-patched/includes/admin/marketplace-suggestions/class-wc-marketplace-suggestions.php
 --- woocommerce-11.2.2/includes/admin/marketplace-suggestions/class-wc-marketplace-suggestions.php	2026-11-04 15:40:08.000000000 +0000
-+++ woocommerce-11.2.2-patched/includes/admin/marketplace-suggestions/class-wc-marketplace-suggestions.php	2026-11-04 21:14:43.147927661 +0000
++++ woocommerce-11.2.2-patched/includes/admin/marketplace-suggestions/class-wc-marketplace-suggestions.php	2026-11-05 12:26:39.363388181 +0000
 @@ -163,6 +163,9 @@
  	 * @return bool
  	 */
@@ -37,7 +37,7 @@ diff -ruN woocommerce-11.2.2/includes/admin/marketplace-suggestions/class-wc-mar
  		$suggestion_locales = array(
 diff -ruN woocommerce-11.2.2/includes/class-wc-payment-gateways.php woocommerce-11.2.2-patched/includes/class-wc-payment-gateways.php
 --- woocommerce-11.2.2/includes/class-wc-payment-gateways.php	2026-11-04 15:40:08.000000000 +0000
-+++ woocommerce-11.2.2-patched/includes/class-wc-payment-gateways.php	2026-11-04 21:14:43.147927661 +0000
++++ woocommerce-11.2.2-patched/includes/class-wc-payment-gateways.php	2026-11-05 12:26:39.363388181 +0000
 @@ -472,6 +472,14 @@
  	 * @return void
  	 */
@@ -55,7 +55,7 @@ diff -ruN woocommerce-11.2.2/includes/class-wc-payment-gateways.php woocommerce-
  		}
 diff -ruN woocommerce-11.2.2/includes/class-wc-tracker.php woocommerce-11.2.2-patched/includes/class-wc-tracker.php
 --- woocommerce-11.2.2/includes/class-wc-tracker.php	2026-11-04 15:40:08.000000000 +0000
-+++ woocommerce-11.2.2-patched/includes/class-wc-tracker.php	2026-11-04 21:14:43.147927661 +0000
++++ woocommerce-11.2.2-patched/includes/class-wc-tracker.php	2026-11-05 12:26:39.363388181 +0000
 @@ -61,6 +61,10 @@
  	 * @param boolean $override Should override?.
  	 */
@@ -69,7 +69,7 @@ diff -ruN woocommerce-11.2.2/includes/class-wc-tracker.php woocommerce-11.2.2-pa
  			return;
 diff -ruN woocommerce-11.2.2/includes/class-woocommerce.php woocommerce-11.2.2-patched/includes/class-woocommerce.php
 --- woocommerce-11.2.2/includes/class-woocommerce.php	2026-11-04 15:40:08.000000000 +0000
-+++ woocommerce-11.2.2-patched/includes/class-woocommerce.php	2026-11-04 21:14:43.147927661 +0000
++++ woocommerce-11.2.2-patched/includes/class-woocommerce.php	2026-11-05 12:26:43.727442301 +0000
 @@ -332,7 +332,7 @@
  
  		add_action( 'plugins_loaded', array( $this, 'on_plugins_loaded' ), -1 );
@@ -127,7 +127,7 @@ diff -ruN woocommerce-11.2.2/includes/class-woocommerce.php woocommerce-11.2.2-p
  		include_once WC_ABSPATH . 'includes/blocks/class-wc-blocks-utils.php';
  
  		/**
-@@ -997,6 +1016,80 @@
+@@ -997,6 +1016,95 @@
  		 */
  		do_action( 'before_woocommerce_init' ); // phpcs:ignore WooCommerce.Commenting.CommentHooks.MissingSinceComment
  
@@ -205,10 +205,25 @@ diff -ruN woocommerce-11.2.2/includes/class-woocommerce.php woocommerce-11.2.2-p
 +            }
 +        }
 +
++        // Pin scheduled Analytics import where the store never chose a mode (pre-10.5 installs).
++        // Only while OrdersScheduler's add_option_ watcher is registered: it seeds the cursor and schedules the batch.
++        // Both options checked: is_scheduled_import_enabled() still falls back to the legacy inverted one.
++        if ( false === get_option( 'woocommerce_analytics_scheduled_import', false )
++            && false === get_option( 'woocommerce_analytics_immediate_import', false )
++            && has_action( 'add_option_woocommerce_analytics_scheduled_import' ) ) {
++            add_option( 'woocommerce_analytics_scheduled_import', 'yes' );
++            // Upstream never deletes this note once it stops applying, so remove it here.
++            try {
++                \Automattic\WooCommerce\Internal\Admin\Notes\ScheduledUpdatesPromotion::possibly_delete_note();
++            } catch ( \Exception $wpatcher_exception ) {
++                wc_get_logger()->warning( 'Could not delete scheduled-updates promotion note: ' . $wpatcher_exception->getMessage(), array( 'source' => 'wpatcher' ) );
++            }
++        }
++
  		// Set up localisation.
  		$this->load_plugin_textdomain();
  
-@@ -1646,6 +1739,9 @@
+@@ -1646,6 +1754,9 @@
  	 * @internal For exclusive usage of WooCommerce core, backwards compatibility not guaranteed.
  	 */
  	public function add_woocommerce_tracker_send_event_wrapper() {
@@ -220,7 +235,7 @@ diff -ruN woocommerce-11.2.2/includes/class-woocommerce.php woocommerce-11.2.2-p
  		}
 diff -ruN woocommerce-11.2.2/includes/react-admin/class-experimental-abtest.php woocommerce-11.2.2-patched/includes/react-admin/class-experimental-abtest.php
 --- woocommerce-11.2.2/includes/react-admin/class-experimental-abtest.php	2026-11-04 15:40:08.000000000 +0000
-+++ woocommerce-11.2.2-patched/includes/react-admin/class-experimental-abtest.php	2026-11-04 21:14:43.147927661 +0000
++++ woocommerce-11.2.2-patched/includes/react-admin/class-experimental-abtest.php	2026-11-05 12:26:39.363388181 +0000
 @@ -153,6 +153,9 @@
  	 * @return array|\WP_Error A/B test variation error on failure.
  	 */
@@ -233,7 +248,7 @@ diff -ruN woocommerce-11.2.2/includes/react-admin/class-experimental-abtest.php 
  			$jetpack_connection_manager = new Jetpack_Connection_Manager();
 diff -ruN woocommerce-11.2.2/includes/tracks/class-wc-site-tracking.php woocommerce-11.2.2-patched/includes/tracks/class-wc-site-tracking.php
 --- woocommerce-11.2.2/includes/tracks/class-wc-site-tracking.php	2026-11-04 15:40:08.000000000 +0000
-+++ woocommerce-11.2.2-patched/includes/tracks/class-wc-site-tracking.php	2026-11-04 21:14:43.147927661 +0000
++++ woocommerce-11.2.2-patched/includes/tracks/class-wc-site-tracking.php	2026-11-05 12:26:39.363388181 +0000
 @@ -17,6 +17,9 @@
  	 * @return bool
  	 */
@@ -246,7 +261,7 @@ diff -ruN woocommerce-11.2.2/includes/tracks/class-wc-site-tracking.php woocomme
  		 * `woocommerce_apply_tracking` will be deprecated. Please use
 diff -ruN woocommerce-11.2.2/includes/tracks/class-wc-tracks-client.php woocommerce-11.2.2-patched/includes/tracks/class-wc-tracks-client.php
 --- woocommerce-11.2.2/includes/tracks/class-wc-tracks-client.php	2026-11-04 15:40:08.000000000 +0000
-+++ woocommerce-11.2.2-patched/includes/tracks/class-wc-tracks-client.php	2026-11-04 21:14:43.147927661 +0000
++++ woocommerce-11.2.2-patched/includes/tracks/class-wc-tracks-client.php	2026-11-05 12:26:39.363388181 +0000
 @@ -50,6 +50,9 @@
  	 * @return void
  	 */
@@ -259,7 +274,7 @@ diff -ruN woocommerce-11.2.2/includes/tracks/class-wc-tracks-client.php woocomme
  	}
 diff -ruN woocommerce-11.2.2/includes/wccom-site/class-wc-wccom-site.php woocommerce-11.2.2-patched/includes/wccom-site/class-wc-wccom-site.php
 --- woocommerce-11.2.2/includes/wccom-site/class-wc-wccom-site.php	2026-11-04 15:40:08.000000000 +0000
-+++ woocommerce-11.2.2-patched/includes/wccom-site/class-wc-wccom-site.php	2026-11-04 21:14:43.147927661 +0000
++++ woocommerce-11.2.2-patched/includes/wccom-site/class-wc-wccom-site.php	2026-11-05 12:26:39.363388181 +0000
 @@ -26,6 +26,9 @@
  	 * @since 3.7.0
  	 */
@@ -272,7 +287,7 @@ diff -ruN woocommerce-11.2.2/includes/wccom-site/class-wc-wccom-site.php woocomm
  		add_action( 'woocommerce_wccom_install_products', array( 'WC_WCCOM_Site_Installer', 'install' ) );
 diff -ruN woocommerce-11.2.2/src/Admin/API/Options.php woocommerce-11.2.2-patched/src/Admin/API/Options.php
 --- woocommerce-11.2.2/src/Admin/API/Options.php	2026-11-04 15:40:08.000000000 +0000
-+++ woocommerce-11.2.2-patched/src/Admin/API/Options.php	2026-11-04 21:14:43.147927661 +0000
++++ woocommerce-11.2.2-patched/src/Admin/API/Options.php	2026-11-05 12:26:39.363388181 +0000
 @@ -252,6 +252,35 @@
  
  		$params = explode( ',', $request['options'] );
@@ -311,7 +326,7 @@ diff -ruN woocommerce-11.2.2/src/Admin/API/Options.php woocommerce-11.2.2-patche
  
 diff -ruN woocommerce-11.2.2/src/Admin/Features/MarketingRecommendations/MarketingRecommendationsDataSourcePoller.php woocommerce-11.2.2-patched/src/Admin/Features/MarketingRecommendations/MarketingRecommendationsDataSourcePoller.php
 --- woocommerce-11.2.2/src/Admin/Features/MarketingRecommendations/MarketingRecommendationsDataSourcePoller.php	2026-11-04 15:40:08.000000000 +0000
-+++ woocommerce-11.2.2-patched/src/Admin/Features/MarketingRecommendations/MarketingRecommendationsDataSourcePoller.php	2026-11-04 21:14:43.147927661 +0000
++++ woocommerce-11.2.2-patched/src/Admin/Features/MarketingRecommendations/MarketingRecommendationsDataSourcePoller.php	2026-11-05 12:26:39.363388181 +0000
 @@ -51,6 +51,8 @@
  	 * @return array
  	 */
@@ -323,7 +338,7 @@ diff -ruN woocommerce-11.2.2/src/Admin/Features/MarketingRecommendations/Marketi
  		);
 diff -ruN woocommerce-11.2.2/src/Admin/Features/MarketingRecommendations/MiscRecommendationsDataSourcePoller.php woocommerce-11.2.2-patched/src/Admin/Features/MarketingRecommendations/MiscRecommendationsDataSourcePoller.php
 --- woocommerce-11.2.2/src/Admin/Features/MarketingRecommendations/MiscRecommendationsDataSourcePoller.php	2026-11-04 15:40:08.000000000 +0000
-+++ woocommerce-11.2.2-patched/src/Admin/Features/MarketingRecommendations/MiscRecommendationsDataSourcePoller.php	2026-11-04 21:14:43.147927661 +0000
++++ woocommerce-11.2.2-patched/src/Admin/Features/MarketingRecommendations/MiscRecommendationsDataSourcePoller.php	2026-11-05 12:26:39.363388181 +0000
 @@ -59,6 +59,8 @@
  	 * @return array
  	 */
@@ -335,7 +350,7 @@ diff -ruN woocommerce-11.2.2/src/Admin/Features/MarketingRecommendations/MiscRec
  		);
 diff -ruN woocommerce-11.2.2/src/Admin/Features/PaymentGatewaySuggestions/PaymentGatewaySuggestionsDataSourcePoller.php woocommerce-11.2.2-patched/src/Admin/Features/PaymentGatewaySuggestions/PaymentGatewaySuggestionsDataSourcePoller.php
 --- woocommerce-11.2.2/src/Admin/Features/PaymentGatewaySuggestions/PaymentGatewaySuggestionsDataSourcePoller.php	2026-11-04 15:40:08.000000000 +0000
-+++ woocommerce-11.2.2-patched/src/Admin/Features/PaymentGatewaySuggestions/PaymentGatewaySuggestionsDataSourcePoller.php	2026-11-04 21:14:43.147927661 +0000
++++ woocommerce-11.2.2-patched/src/Admin/Features/PaymentGatewaySuggestions/PaymentGatewaySuggestionsDataSourcePoller.php	2026-11-05 12:26:39.363388181 +0000
 @@ -45,6 +45,8 @@
  	 * @return array
  	 */
@@ -347,7 +362,7 @@ diff -ruN woocommerce-11.2.2/src/Admin/Features/PaymentGatewaySuggestions/Paymen
  		);
 diff -ruN woocommerce-11.2.2/src/Admin/Features/ShippingPartnerSuggestions/ShippingPartnerSuggestionsDataSourcePoller.php woocommerce-11.2.2-patched/src/Admin/Features/ShippingPartnerSuggestions/ShippingPartnerSuggestionsDataSourcePoller.php
 --- woocommerce-11.2.2/src/Admin/Features/ShippingPartnerSuggestions/ShippingPartnerSuggestionsDataSourcePoller.php	2026-11-04 15:40:08.000000000 +0000
-+++ woocommerce-11.2.2-patched/src/Admin/Features/ShippingPartnerSuggestions/ShippingPartnerSuggestionsDataSourcePoller.php	2026-11-04 21:14:43.147927661 +0000
++++ woocommerce-11.2.2-patched/src/Admin/Features/ShippingPartnerSuggestions/ShippingPartnerSuggestionsDataSourcePoller.php	2026-11-05 12:26:39.363388181 +0000
 @@ -45,6 +45,8 @@
  	 * @return array
  	 */
@@ -359,7 +374,7 @@ diff -ruN woocommerce-11.2.2/src/Admin/Features/ShippingPartnerSuggestions/Shipp
  		);
 diff -ruN woocommerce-11.2.2/src/Admin/RemoteInboxNotifications/RemoteInboxNotificationsDataSourcePoller.php woocommerce-11.2.2-patched/src/Admin/RemoteInboxNotifications/RemoteInboxNotificationsDataSourcePoller.php
 --- woocommerce-11.2.2/src/Admin/RemoteInboxNotifications/RemoteInboxNotificationsDataSourcePoller.php	2026-11-04 15:40:08.000000000 +0000
-+++ woocommerce-11.2.2-patched/src/Admin/RemoteInboxNotifications/RemoteInboxNotificationsDataSourcePoller.php	2026-11-04 21:14:43.147927661 +0000
++++ woocommerce-11.2.2-patched/src/Admin/RemoteInboxNotifications/RemoteInboxNotificationsDataSourcePoller.php	2026-11-05 12:26:39.363388181 +0000
 @@ -232,6 +232,8 @@
  	 * @return array
  	 */
@@ -371,7 +386,7 @@ diff -ruN woocommerce-11.2.2/src/Admin/RemoteInboxNotifications/RemoteInboxNotif
  		);
 diff -ruN woocommerce-11.2.2/src/Blocks/DependencyDetection.php woocommerce-11.2.2-patched/src/Blocks/DependencyDetection.php
 --- woocommerce-11.2.2/src/Blocks/DependencyDetection.php	2026-11-04 15:40:08.000000000 +0000
-+++ woocommerce-11.2.2-patched/src/Blocks/DependencyDetection.php	2026-11-04 21:14:43.147927661 +0000
++++ woocommerce-11.2.2-patched/src/Blocks/DependencyDetection.php	2026-11-05 12:26:39.363388181 +0000
 @@ -36,7 +36,7 @@
  	 * Maps window.wc.* property names to their required script handles.
  	 *
@@ -383,7 +398,7 @@ diff -ruN woocommerce-11.2.2/src/Blocks/DependencyDetection.php woocommerce-11.2
  	 */
 diff -ruN woocommerce-11.2.2/src/Internal/Admin/RemoteFreeExtensions/RemoteFreeExtensionsDataSourcePoller.php woocommerce-11.2.2-patched/src/Internal/Admin/RemoteFreeExtensions/RemoteFreeExtensionsDataSourcePoller.php
 --- woocommerce-11.2.2/src/Internal/Admin/RemoteFreeExtensions/RemoteFreeExtensionsDataSourcePoller.php	2026-11-04 15:40:08.000000000 +0000
-+++ woocommerce-11.2.2-patched/src/Internal/Admin/RemoteFreeExtensions/RemoteFreeExtensionsDataSourcePoller.php	2026-11-04 21:14:43.147927661 +0000
++++ woocommerce-11.2.2-patched/src/Internal/Admin/RemoteFreeExtensions/RemoteFreeExtensionsDataSourcePoller.php	2026-11-05 12:26:39.363388181 +0000
 @@ -47,6 +47,8 @@
  	 * @return array
  	 */
@@ -395,7 +410,7 @@ diff -ruN woocommerce-11.2.2/src/Internal/Admin/RemoteFreeExtensions/RemoteFreeE
  		);
 diff -ruN woocommerce-11.2.2/src/Internal/Admin/Settings/Payments.php woocommerce-11.2.2-patched/src/Internal/Admin/Settings/Payments.php
 --- woocommerce-11.2.2/src/Internal/Admin/Settings/Payments.php	2026-11-04 15:40:08.000000000 +0000
-+++ woocommerce-11.2.2-patched/src/Internal/Admin/Settings/Payments.php	2026-11-04 21:14:43.147927661 +0000
++++ woocommerce-11.2.2-patched/src/Internal/Admin/Settings/Payments.php	2026-11-05 12:26:39.363388181 +0000
 @@ -100,7 +100,7 @@
  		// Only include suggestions if the requesting user can install plugins.
  		$suggestions = array();
@@ -407,7 +422,7 @@ diff -ruN woocommerce-11.2.2/src/Internal/Admin/Settings/Payments.php woocommerc
  		if ( ! empty( $suggestions['preferred'] ) ) {
 diff -ruN woocommerce-11.2.2/src/Internal/Admin/Settings/PaymentsProviders.php woocommerce-11.2.2-patched/src/Internal/Admin/Settings/PaymentsProviders.php
 --- woocommerce-11.2.2/src/Internal/Admin/Settings/PaymentsProviders.php	2026-11-04 15:40:08.000000000 +0000
-+++ woocommerce-11.2.2-patched/src/Internal/Admin/Settings/PaymentsProviders.php	2026-11-04 21:14:43.147927661 +0000
++++ woocommerce-11.2.2-patched/src/Internal/Admin/Settings/PaymentsProviders.php	2026-11-05 12:26:39.363388181 +0000
 @@ -684,6 +684,9 @@
  	 * @throws Exception If there are malformed or invalid suggestions.
  	 */
@@ -420,7 +435,7 @@ diff -ruN woocommerce-11.2.2/src/Internal/Admin/Settings/PaymentsProviders.php w
  
 diff -ruN woocommerce-11.2.2/src/Internal/Admin/Suggestions/Incentives/Incentive.php woocommerce-11.2.2-patched/src/Internal/Admin/Suggestions/Incentives/Incentive.php
 --- woocommerce-11.2.2/src/Internal/Admin/Suggestions/Incentives/Incentive.php	2026-11-04 15:40:08.000000000 +0000
-+++ woocommerce-11.2.2-patched/src/Internal/Admin/Suggestions/Incentives/Incentive.php	2026-11-04 21:14:43.147927661 +0000
++++ woocommerce-11.2.2-patched/src/Internal/Admin/Suggestions/Incentives/Incentive.php	2026-11-05 12:26:39.363388181 +0000
 @@ -59,6 +59,19 @@
  	 * @return array The incentives list with details for each incentive.
  	 */
@@ -443,7 +458,7 @@ diff -ruN woocommerce-11.2.2/src/Internal/Admin/Suggestions/Incentives/Incentive
  			fn( $incentive ) => $this->validate_incentive( $incentive )
 diff -ruN woocommerce-11.2.2/src/Internal/Admin/WCAdminAssets.php woocommerce-11.2.2-patched/src/Internal/Admin/WCAdminAssets.php
 --- woocommerce-11.2.2/src/Internal/Admin/WCAdminAssets.php	2026-11-04 15:40:08.000000000 +0000
-+++ woocommerce-11.2.2-patched/src/Internal/Admin/WCAdminAssets.php	2026-11-04 21:14:43.147927661 +0000
++++ woocommerce-11.2.2-patched/src/Internal/Admin/WCAdminAssets.php	2026-11-05 12:26:39.363388181 +0000
 @@ -249,6 +249,65 @@
  		wp_enqueue_script( WC_ADMIN_APP );
  		wp_enqueue_style( WC_ADMIN_APP );
@@ -512,7 +527,7 @@ diff -ruN woocommerce-11.2.2/src/Internal/Admin/WCAdminAssets.php woocommerce-11
  
 diff -ruN woocommerce-11.2.2/vendor/automattic/jetpack-connection/src/class-plugin.php woocommerce-11.2.2-patched/vendor/automattic/jetpack-connection/src/class-plugin.php
 --- woocommerce-11.2.2/vendor/automattic/jetpack-connection/src/class-plugin.php	2026-11-04 15:40:08.000000000 +0000
-+++ woocommerce-11.2.2-patched/vendor/automattic/jetpack-connection/src/class-plugin.php	2026-11-04 21:14:43.147927661 +0000
++++ woocommerce-11.2.2-patched/vendor/automattic/jetpack-connection/src/class-plugin.php	2026-11-05 12:26:39.363388181 +0000
 @@ -47,7 +47,7 @@
  		$this->slug = $slug;
  
@@ -524,7 +539,7 @@ diff -ruN woocommerce-11.2.2/vendor/automattic/jetpack-connection/src/class-plug
  	/**
 diff -ruN woocommerce-11.2.2/woocommerce.php woocommerce-11.2.2-patched/woocommerce.php
 --- woocommerce-11.2.2/woocommerce.php	2026-11-04 15:40:08.000000000 +0000
-+++ woocommerce-11.2.2-patched/woocommerce.php	2026-11-04 21:25:28.896972787 +0000
++++ woocommerce-11.2.2-patched/woocommerce.php	2026-11-05 12:26:43.727442301 +0000
 @@ -73,3 +73,19 @@
  if ( class_exists( \Automattic\Jetpack\Connection\Rest_Authentication::class ) ) {
  	\Automattic\Jetpack\Connection\Rest_Authentication::init();
@@ -535,7 +550,7 @@ diff -ruN woocommerce-11.2.2/woocommerce.php woocommerce-11.2.2-patched/woocomme
 +	'plugin_row_meta',
 +	function ( $links, $file ) {
 +		if ( $file == 'woocommerce/woocommerce.php' ) {
-+			$links['wpatcher'] = '<span title="Patched to fix security and performance issues" style="display:inline-block; padding:0 0.6em; border:1px solid #b8e6bf; border-radius:999px; background:#edfaef; color:#007017; font-size:12px; line-height:1.6; cursor:help">&#10003; Patched 2026-11-04</span>';
++			$links['wpatcher'] = '<span title="Patched to fix security and performance issues" style="display:inline-block; padding:0 0.6em; border:1px solid #b8e6bf; border-radius:999px; background:#edfaef; color:#007017; font-size:12px; line-height:1.6; cursor:help">&#10003; Patched 2026-11-05</span>';
 +		}
 +
 +		return $links;
