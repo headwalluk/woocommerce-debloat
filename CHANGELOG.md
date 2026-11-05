@@ -34,7 +34,8 @@ since 10.5.0, so this only reaches pre-10.5 stores whose owners never chose a mo
 
 Verified against a pristine 11.2.2 extraction in the `patch -p1 --directory=woocommerce` shape `wpatch`
 uses: zero rejects, fuzz or offset; round-trip byte-identical; `php -l` clean on both changed files.
-Validated on a dev site via `wpatch`.
+Validated on a dev site via `wpatch`, then rolled out to the fleet on 2026-11-05 and confirmed on a
+production site (option switched to scheduled as expected).
 
 ---
 
