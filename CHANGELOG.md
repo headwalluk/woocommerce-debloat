@@ -44,7 +44,8 @@ the note is never created. A note already created by unpatched 11.3.0 stays unti
   remote proxy that our Jetpack hunks leave unavailable.
 
 Verified against a pristine 11.3.0 extraction in the `patch -p1 --directory=woocommerce` shape `wpatch`
-uses: zero rejects, fuzz or offset; `php -l` clean on every changed PHP file. Not yet validated live.
+uses: zero rejects, fuzz or offset; `php -l` clean on every changed PHP file. Applied via `wpatch` and
+confirmed good on production sites on 2026-11-11.
 
 ---
 
