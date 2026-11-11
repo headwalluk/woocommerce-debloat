@@ -4,6 +4,50 @@ All notable changes to the patch set are documented here, grouped by WooCommerce
 
 ---
 
+## 11.3.0 — 2026-11-11
+
+Base is the revised 11.2.2 patch, which applied cleanly. One new target; badge bumped to
+`&#10003; Patched 2026-11-11`, green style and `PHP_INT_MAX` unchanged. 25 files (was 24).
+
+**New: suppress the "extensions without a subscription" inbox warning (tier 1, unhooked server-side).**
+11.3.0 adds `src/Internal/Admin/Notes/ExtensionsWithoutSubscription.php`, refreshed on `admin_head` of
+every WooCommerce admin page. It warns "X doesn't have an active subscription … Subscribe on
+WooCommerce.com" and links to My Subscriptions with `utm_campaign=pu_inbox_purchase`. On a store not
+connected to WooCommerce.com it treats every active WooCommerce.com extension as unsubscribed, without
+checking. Connected stores also fetch their subscription list from WooCommerce.com once a day for it. The
+patch comments out `new ExtensionsWithoutSubscription();` in `src/Internal/Admin/FeaturePlugin.php`, so
+the note is never created. A note already created by unpatched 11.3.0 stays until it is dismissed.
+
+**Carried forward, re-checked against 11.3.0:**
+
+- `includes/class-woocommerce.php` applied with fuzz 2 because upstream added
+  `ProductCustoms\Telemetry::register()` to the trailing context of the `LegacySelect2UsageTracker` hunk.
+  That class only adds a snapshot to the `woocommerce_tracker_data` payload, which never leaves the site
+  because `send_tracking_data()` returns early. The regenerated patch applies with no fuzz or offset.
+- The Remote Inbox poller hunk moved 119 lines. 11.3.0's new withdrawn-alert cleanup depends on a
+  snapshot that is only recorded when a feed is fetched, so it does nothing with our empty data sources.
+- The feature-default pin now covers 22 options: `ucp` and `extensible_abilities` added, `mcp_integration`
+  dropped (now deprecated, `deprecated_value => false`).
+- Drift watchlist: every count at baseline except `deprecated_since`, 4 → 5 (`mcp_integration`, forced
+  off, no action). Outbound HTTP callsites +1 (a SiteHealth loopback to the site's own uploads URL),
+  shipped-JS tracking domains flat, no new Tracks event names.
+
+**Reviewed, no patch needed:**
+
+- `src/Internal/Abilities/AbilitiesTracking.php` sends a Tracks event for every WooCommerce ability call
+  over MCP, REST or WP-CLI, including which AI client called it. It requires
+  `woocommerce_allow_tracking === 'yes'` and `WC_Site_Tracking::is_tracking_enabled()`, both already off
+  under the patch, and checks again before it queues an event, multisite included.
+- Universal Commerce Protocol (`src/Internal/Ucp/`, `wc/ucp/v1` Store API routes) is experimental and off
+  by default; routes and discovery register only when `UcpUtils::is_enabled()`.
+- Push notification step logging writes to local WC logs only, and push notifications need a WordPress.com
+  remote proxy that our Jetpack hunks leave unavailable.
+
+Verified against a pristine 11.3.0 extraction in the `patch -p1 --directory=woocommerce` shape `wpatch`
+uses: zero rejects, fuzz or offset; `php -l` clean on every changed PHP file. Not yet validated live.
+
+---
+
 ## 11.2.2 (revised) — 2026-11-05
 
 Same WooCommerce version, one new target, badge bumped to `&#10003; Patched 2026-11-05`. The badge keeps
