@@ -46,7 +46,7 @@ Last updated: 2026-10-07
 
 | File | Target | Patch | Why |
 |------|--------|-------|-----|
-| `includes/wccom-site/class-wc-wccom-site.php` | `load()` | Early return | Disables REST endpoints that allow Automattic to remotely install plugins, and removes `determine_current_user` filter hook |
+| `includes/wccom-site/class-wc-wccom-site.php` | `load()` | Early return | Disables REST endpoints that allow Automattic to remotely install plugins, and stops the WooCommerce.com request-authentication hook registering (`determine_current_user` through 11.3.0, the `rest_authentication_errors` fallback from 11.3.1) |
 | `includes/admin/helper/class-wc-helper.php` | `get_product_usage_notice_rules()` | Early return `[]` | Prevents outbound call to fetch product usage notice rules |
 
 ### Jetpack Connection
@@ -128,7 +128,7 @@ It does **not** block `WC_Install::enable_email_improvements_for_existing_mercha
 
 ## Drift Watchlist
 
-A clean apply proves a hunk still *fits*. It does not prove the hunk still *does* anything. These are the targets that can go silently dead on a WooCommerce upgrade, with the anchor to check and the baseline count as of clean 11.2.0 (every count unchanged from 11.1.0 through 11.3.0, except the `deprecated_since` row, which rose to 5 in 11.3.0). Nothing in `patch`, `php -l` or the apply log will flag any of them.
+A clean apply proves a hunk still *fits*. It does not prove the hunk still *does* anything. These are the targets that can go silently dead on a WooCommerce upgrade, with the anchor to check and the baseline count as of clean 11.2.0 (every count unchanged from 11.1.0 through 11.3.1, except the `deprecated_since` row, which rose to 5 in 11.3.0). Nothing in `patch`, `php -l` or the apply log will flag any of them.
 
 Run from the **clean** extraction, not the patched one — and against the **final** build, not an RC: the admin bundle can be rebuilt between the two.
 

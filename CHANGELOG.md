@@ -4,6 +4,37 @@ All notable changes to the patch set are documented here, grouped by WooCommerce
 
 ---
 
+## 11.3.1 — 2026-11-19
+
+Bump-only. The 11.3.0 patch applied cleanly; the only content change is the badge, bumped to
+`&#10003; Patched 2026-11-19`, green style and `PHP_INT_MAX` unchanged. 25 files, as before.
+
+11.3.1 is a security and correctness release: about 70 changed PHP files covering Store API and REST
+permission checks, coupon usage counting, held stock, checkout links, PayPal, email verification and
+error-log redaction. None of it adds an outbound call, a cron job, a Tracks event or an admin surface.
+
+**Carried forward, re-checked against 11.3.1:**
+
+- `includes/class-woocommerce.php` applied with offset 9 on the last three hunks, from upstream's
+  Store API path-decoding and stack-trace redaction changes. The regenerated patch applies with no fuzz
+  or offset.
+- `includes/wccom-site/class-wc-wccom-site.php`: upstream dropped the `determine_current_user` filter and
+  now authenticates WooCommerce.com requests only in `authentication_fallback()` on
+  `rest_authentication_errors`. Our early return in `load()` sits above both, so neither is registered and
+  the hunk still covers the whole surface.
+- `src/Admin/API/Options.php`: upstream swapped `Homescreen::is_admin_user()` for
+  `current_user_can( 'manage_woocommerce' )` in the default permissions. Our hunk is in `get_options()`
+  and is unaffected.
+- `includes/class-wc-tracker.php` gains a `customer_application_password_users` count in the tracker
+  payload. The payload never leaves the site because `send_tracking_data()` returns early.
+- Drift watchlist: every count at baseline. `FeaturesController.php` and `ComparisonOperation.php` are
+  unchanged upstream. Outbound HTTP callsites flat at 75.
+
+Verified against a pristine 11.3.1 extraction in the `patch -p1 --directory=woocommerce` shape `wpatch`
+uses: zero rejects, fuzz or offset; `php -l` clean on every changed PHP file.
+
+---
+
 ## 11.3.0 — 2026-11-11
 
 Base is the revised 11.2.2 patch, which applied cleanly. One new target; badge bumped to
