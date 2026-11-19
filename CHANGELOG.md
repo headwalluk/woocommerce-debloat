@@ -31,7 +31,8 @@ error-log redaction. None of it adds an outbound call, a cron job, a Tracks even
   unchanged upstream. Outbound HTTP callsites flat at 75.
 
 Verified against a pristine 11.3.1 extraction in the `patch -p1 --directory=woocommerce` shape `wpatch`
-uses: zero rejects, fuzz or offset; `php -l` clean on every changed PHP file.
+uses: zero rejects, fuzz or offset; `php -l` clean on every changed PHP file. Deployed to the fleet via
+`wpatch` on 2026-11-19 and confirmed to apply cleanly on a production site with WooCommerce 11.3.1.
 
 ---
 
